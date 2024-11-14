@@ -45,9 +45,12 @@ class customer(models.Model):
     country=models.CharField(max_length=50)
     city_district=models.CharField(max_length=50)
     pincode=models.CharField(max_length=50)
-    Email=models.EmailField()
+    Email=models.EmailField(blank=True,null=True)
     
     def save(self, *args, **kwargs):
         if not self.pk:  # Ensure that the field can only be set during object creation
             self.account_type = "Customer"
         super().save(*args, **kwargs)
+        
+    def __str__(self):
+        return f"{self.user.phone_number} - {self.first_name} {self.last_name}"    
