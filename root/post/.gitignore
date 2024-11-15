@@ -1,0 +1,24 @@
+# Environment variables and API keys
+.env
+*.env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore virtual environment specific files
+/root/bin/
+/root/lib/
+/root/include/
+/root/venv/
+
+# Ignore virtual environment related files
+*.pyc
+*.pyo
+__pycache__/
+
+# Ignore IDE or editor-specific files
+.vscode/
+.idea/
+*.swp
