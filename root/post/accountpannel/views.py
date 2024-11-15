@@ -70,7 +70,7 @@ class customersignup(APIView):
             if not phone_number:
                 return Response({"phone_number": "Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)        
             
-            if User.objects.filter(phone_number=phone_number).exists():
+            if User.objects.filter(phone_number=phone_number).exists() and User.objects.get(phone_number=phone_number).is_phone_verified==True:
                 return Response({"phone_number": "User already exists with this phone number"}, status=status.HTTP_400_BAD_REQUEST)
             otp=send_otplogin(phone_number)
             if otp==True:
