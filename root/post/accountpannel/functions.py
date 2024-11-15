@@ -106,8 +106,19 @@ def send_otplogin(phone_number):
             otp_expiry = otp_expiry.astimezone(india_timezone)   
             user=User.objects.create_user(phone_number=phone_number,is_phone_verified=False,otp_code=otp,otp_expiry=otp_expiry)
             user.save()
-            threading.Timer(50000,delete_otp,args=[phone_number]).start()
+            threading.Timer(150,delete_otp,args=[phone_number]).start()
+            threading.Timer(600,delete_user,args=[phone_number]).start()
             return True
         return False
     except User.DoesNotExist:
         return False    
+    
+    
+    
+def delete_user(phone_number):
+    try:
+        user = User.objects.get(phone_number=phone_number)
+        if user.is_phone_verified==False:
+            user.delete()    
+    except User.DoesNotExist:
+        pass           

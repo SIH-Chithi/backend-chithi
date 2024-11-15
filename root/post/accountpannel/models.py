@@ -39,7 +39,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.phone_number
     
     
-    
 class customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     account_type=models.CharField(max_length=50,editable=False)  

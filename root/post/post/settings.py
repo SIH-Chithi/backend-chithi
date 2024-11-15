@@ -30,6 +30,12 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://post.rootski.live',
+    'http://13.201.209.85', 
+]
+
+
 # Application definition
 
 INSTALLED_APPS = [
