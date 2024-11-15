@@ -92,6 +92,15 @@ def send_otplogin(phone_number):
         url="https://rest.nexmo.com/sms/json"
         response = sendsms(payload,url) 
         if response==True: 
+            if user.objects.filter(phone_number=phone_number).exists():
+                user=User.objects.get(phone_number=phone_number)
+                otp_expiry=timezone.now()+timedelta(minutes=10)
+                india_timezone = pytz.timezone('Asia/Kolkata')
+                otp_expiry = otp_expiry.astimezone(india_timezone) 
+                user.otp_code=otp
+                user.otp_expiry=otp_expiry
+                user.save()
+                return True
             otp_expiry=timezone.now()+timedelta(minutes=10)
             india_timezone = pytz.timezone('Asia/Kolkata')
             otp_expiry = otp_expiry.astimezone(india_timezone)   
