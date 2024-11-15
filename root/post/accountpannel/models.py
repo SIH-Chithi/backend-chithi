@@ -10,7 +10,8 @@ class UserManager(BaseUserManager):
         if not phone_number:
             raise ValueError("The phone number must be set")
         user = self.model(phone_number=phone_number, **extra_fields)
-        user.set_password(password)
+        if password:
+            user.set_password(password)
         user.save(using=self._db)
         return user
 
@@ -32,6 +33,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'phone_number'
     REQUIRED_FIELDS = []
+    USER_ID_FIELD = 'phone_number'
     
     def __str__(self):
         return self.phone_number

@@ -45,6 +45,8 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = 'accountpannel.User'
+USER_ID_FIELD = 'user_id'
+
 
 REST_FRAMEWORK = {
 
@@ -154,6 +156,7 @@ SIMPLE_JWT = {
     'SIGNING_KEY': "ade",
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
+    'USER_ID_FIELD': 'phone_number',
 }
 
 #Vonage
