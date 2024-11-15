@@ -10,7 +10,8 @@ class UserManager(BaseUserManager):
         if not phone_number:
             raise ValueError("The phone number must be set")
         user = self.model(phone_number=phone_number, **extra_fields)
-        user.set_password(password)
+        if password:
+            user.set_password(password)
         user.save(using=self._db)
         return user
 
@@ -32,6 +33,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'phone_number'
     REQUIRED_FIELDS = []
+    USER_ID_FIELD = 'phone_number'
     
     def __str__(self):
         return self.phone_number
@@ -45,9 +47,12 @@ class customer(models.Model):
     country=models.CharField(max_length=50)
     city_district=models.CharField(max_length=50)
     pincode=models.CharField(max_length=50)
-    Email=models.EmailField()
+    Email=models.EmailField(blank=True,null=True)
     
     def save(self, *args, **kwargs):
         if not self.pk:  # Ensure that the field can only be set during object creation
             self.account_type = "Customer"
         super().save(*args, **kwargs)
+        
+    def __str__(self):
+        return f"{self.user.phone_number} - {self.first_name} {self.last_name}"    
