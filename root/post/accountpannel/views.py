@@ -114,7 +114,8 @@ class customerregistration(APIView):
                 return Response({"fields": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
                 
             user=User.objects.get(phone_number=phone_number)
-            newuser=customer.objects.create(user=user, first_name=first_name, last_name=last_name, address_details=address_details, country=country, city_district=city_district, pincode=pincode, email=email if email else None)    
+            print(user)
+            newuser=customer.objects.create(user=user, first_name=first_name, last_name=last_name, address_details=address_details, country=country, city_district=city_district, pincode=pincode, Email=email if email else None)    
             newuser.save()
             
             return Response({"message": "User registered successfully"}, status=status.HTTP_200_OK)

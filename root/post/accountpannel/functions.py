@@ -95,7 +95,7 @@ def send_otplogin(phone_number):
             otp_expiry=timezone.now()+timedelta(minutes=10)
             india_timezone = pytz.timezone('Asia/Kolkata')
             otp_expiry = otp_expiry.astimezone(india_timezone)   
-            user=User.object.create_user(phone_number=phone_number,is_phone_verified=False,otp_code=otp,otp_expiry=otp_expiry)
+            user=User.objects.create_user(phone_number=phone_number,is_phone_verified=False,otp_code=otp,otp_expiry=otp_expiry)
             user.save()
             threading.Timer(50000,delete_otp,args=[phone_number]).start()
             return True
