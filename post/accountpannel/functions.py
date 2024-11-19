@@ -92,7 +92,7 @@ def send_otplogin(phone_number):
         url="https://rest.nexmo.com/sms/json"
         response = sendsms(payload,url) 
         if response==True: 
-            if user.objects.filter(phone_number=phone_number).exists():
+            if User.objects.filter(phone_number=phone_number).exists():
                 user=User.objects.get(phone_number=phone_number)
                 otp_expiry=timezone.now()+timedelta(minutes=10)
                 india_timezone = pytz.timezone('Asia/Kolkata')
