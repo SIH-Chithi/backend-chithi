@@ -96,7 +96,7 @@ class customersignupverify(APIView):
         
 class customerregistration(APIView):
     def post(self,request):
-        try:
+        
             phone_number = request.data.get("phone_number")
             first_name = request.data.get("first_name")
             last_name = request.data.get("last_name")
@@ -118,6 +118,3 @@ class customerregistration(APIView):
             newuser.save()
             
             return Response({"message": "User registered successfully"}, status=status.HTTP_200_OK)
-        
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
