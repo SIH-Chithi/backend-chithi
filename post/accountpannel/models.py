@@ -46,6 +46,7 @@ class customer(models.Model):
     address_details=models.TextField()
     country=models.CharField(max_length=50)
     city_district=models.CharField(max_length=50)
+    state=models.CharField(max_length=100,null=True,blank=True)
     pincode=models.CharField(max_length=50)
     Email=models.EmailField(blank=True,null=True)
     

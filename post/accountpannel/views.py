@@ -105,13 +105,14 @@ class customerregistration(APIView):
             city_district = request.data.get("city_district")
             pincode = request.data.get("pincode")
             email = request.data.get("email")
+            state = request.data.get("state")
             
     
             
             if not phone_number:
                 return Response({"phone_number": "Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
             
-            if not first_name or not last_name or not address_details or not country or not city_district or not pincode:
+            if not first_name or not last_name or not address_details or not country or not city_district or not pincode or not state:
                 return Response({"fields": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
             
             if not User.objects.filter(phone_number=phone_number):
@@ -119,7 +120,7 @@ class customerregistration(APIView):
             user=User.objects.get(phone_number=phone_number)
             if customer.objects.filter(user=user):
                 return Response({"message":"customer already exist"},status=status.HTTP_400_BAD_REQUEST)
-            newuser=customer.objects.create(user=user, first_name=first_name, last_name=last_name, address_details=address_details, country=country, city_district=city_district, pincode=pincode, Email=email if email else None)    
+            newuser=customer.objects.create(user=user, first_name=first_name, last_name=last_name, address_details=address_details, country=country, city_district=city_district, pincode=pincode,state=state, Email=email if email else None)    
             newuser.save()
             
             return Response({"message": "User registered successfully"}, status=status.HTTP_200_OK)
