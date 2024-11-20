@@ -152,7 +152,6 @@ class customer_profile(APIView):
             if not Customer:
                 return Response({"customer": "Customer does not exist with this user"}, status=status.HTTP_400_BAD_REQUEST)
             serializers= customerSerializer(Customer)
-            print(serializers.data)
             return Response(serializers.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)   
