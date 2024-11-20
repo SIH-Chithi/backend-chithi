@@ -28,6 +28,13 @@ class customertoken(TokenObtainPairSerializer):
         except User.DoesNotExist:
             raise serializers.ValidationError("User does not exist with this phone number")
         
+class customerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = customer
+        fields = ['first_name', 'last_name', 'address_details', 'country', 'city_district', 'pincode', 'Email','state']      
+        
+          
+
 
 """ class employeetoken(TokenObtainPairSerializer):
     employee_id = serializers.CharField()
@@ -39,8 +46,3 @@ class customertoken(TokenObtainPairSerializer):
         
         try:
             user= employee.objects.get(employee_id=employee_id) """
-        
-class customerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = customer
-        fields = ['first_name', 'last_name', 'address_details', 'country', 'city_district', 'pincode', 'Email','state']        
