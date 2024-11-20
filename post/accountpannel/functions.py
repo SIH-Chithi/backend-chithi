@@ -2,11 +2,12 @@ from .models import *
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta , datetime
 import threading
 import vonage
 import pytz
-
+from jwt.exceptions import ExpiredSignatureError, DecodeError, InvalidTokenError
+import jwt
 from django.conf import settings
 import requests
 
@@ -122,3 +123,28 @@ def delete_user(phone_number):
             user.delete()    
     except User.DoesNotExist:
         pass           
+    
+def decode_token(token):
+    try:
+        decodetoken = jwt.decode(token, settings.SIMPLE_JWT['SIGNING_KEY'], algorithms=['HS256'], options={"verify_exp": True})
+        user_id = decodetoken.get('user_id')
+        phone_number = decodetoken.get('phone_number')
+        exp = datetime.utcfromtimestamp(decodetoken['exp']) 
+        
+        if user_id and phone_number:
+            user=User.objects.get(user_id=user_id)
+            return user_id, phone_number,exp
+        
+        else:
+            return None
+    except ExpiredSignatureError:
+        return None    
+    
+    
+    
+def getuser(phone_number):
+    try:
+        user=User.objects.get(phone_number=phone_number)
+        return user
+    except User.DoesNotExist:
+        return None    

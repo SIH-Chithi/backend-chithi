@@ -43,4 +43,4 @@ class customertoken(TokenObtainPairSerializer):
 class customerSerializer(serializers.ModelSerializer):
     class Meta:
         model = customer
-        fields = ['first_name', 'last_name', 'address_details', 'country', 'city_district', 'pincode', 'Email']        
+        fields = ['first_name', 'last_name', 'address_details', 'country', 'city_district', 'pincode', 'Email','state']        

@@ -6,6 +6,8 @@ from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
 # Create your views here.
@@ -95,6 +97,8 @@ class customersignupverify(APIView):
             return Response({"phone_number": "User does not exist with this phone number"}, status=status.HTTP_400_BAD_REQUEST)
         
 class customerregistration(APIView):
+    
+    
     def post(self,request):
         
             phone_number = request.data.get("phone_number")
@@ -124,3 +128,55 @@ class customerregistration(APIView):
             newuser.save()
             
             return Response({"message": "User registered successfully"}, status=status.HTTP_200_OK)
+        
+ 
+
+class customer_profile(APIView):   
+    authentication_classes = []
+    permission_classes = [] 
+    def get(self, request):
+        try:
+            token=request.headers["Authorization"]
+
+            if not token:
+                return Response({"token": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+            token=token.split(" ")[1]
+            userid, phone_number,exp = decode_token(token)
+            if not (userid or phone_number or exp):
+                return Response({"token": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)  
+            user = getuser(phone_number)
+            if not user:
+                return Response({"phone_number": "User does not exist with this phone number"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            Customer=customer.objects.get(user=user)
+            if not Customer:
+                return Response({"customer": "Customer does not exist with this user"}, status=status.HTTP_400_BAD_REQUEST)
+            serializers= customerSerializer(Customer)
+            print(serializers.data)
+            return Response(serializers.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)   
+        
+
+class delcustomer(APIView):
+    authentication_classes = []
+    permission_classes = []
+    
+    def delete(self, request):
+        try:
+            token=request.headers["Authorization"]
+            if not token:
+                return Response({"token": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+            token=token.split(" ")[1]
+            user_id, phone_number,exp = decode_token(token)
+            if not (user_id or phone_number or exp):
+                return Response({"token": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user= getuser(phone_number)
+            if not user:
+                return Response({"message": "User does not exist with this phone number"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user.delete()
+            return Response({"message": "User deleted successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

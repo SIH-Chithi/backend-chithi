@@ -8,4 +8,7 @@ urlpatterns = [
     path('customersignup/', customersignup.as_view(), name='customerregister'),
     path('customersignupverify/', customersignupverify.as_view(), name='customersignupverify'),
     path('customerregister/', customerregistration.as_view(), name='customerregister'),
+    path('resendotp/', customerlogin.as_view(), name='resendotp'),
+    path('customerprofile/', customer_profile.as_view(), name='customerprofile'),
+    path('customerdelete/', delcustomer.as_view(), name='customerdelete'),
 ]
