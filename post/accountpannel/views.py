@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 
-# Create your views here.
+# Customer login : send otp to phone number
 class customerlogin(APIView):
     def post(self, request):
         try:
@@ -26,7 +26,8 @@ class customerlogin(APIView):
             return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"phone_number": "User does not exist with this phone number"}, status=status.HTTP_400_BAD_REQUEST)    
-        
+
+# Customer login : verify otp and generate token        
 class verifyotp(APIView):
     def post(self, request):
         try:
@@ -41,6 +42,7 @@ class verifyotp(APIView):
         except User.DoesNotExist:
             return Response({"phone_number": "User does not exist with this phone number"}, status=status.HTTP_400_BAD_REQUEST)
         
+# Customer login : refresh token        
 class customerrefreshtoken(APIView):
     def post(self, request):
         try:
@@ -64,7 +66,7 @@ class customerrefreshtoken(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-
+# Customer signup : send otp to phone number
 class customersignup(APIView):
     def post(self,request):
         try:
@@ -80,6 +82,7 @@ class customersignup(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
+# Customer signup : verify otp
 class customersignupverify(APIView):
     def post(self,request):
         try:
@@ -95,7 +98,8 @@ class customersignupverify(APIView):
                 return Response({"message": "OTP verified successfully"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"phone_number": "User does not exist with this phone number"}, status=status.HTTP_400_BAD_REQUEST)
-        
+
+# Customer signup : create user   
 class customerregistration(APIView):
     
     
@@ -129,8 +133,9 @@ class customerregistration(APIView):
             
             return Response({"message": "User registered successfully"}, status=status.HTTP_200_OK)
         
- 
 
+
+# get customer profile
 class customer_profile(APIView):   
     authentication_classes = []
     permission_classes = [] 
@@ -152,11 +157,11 @@ class customer_profile(APIView):
             if not Customer:
                 return Response({"customer": "Customer does not exist with this user"}, status=status.HTTP_400_BAD_REQUEST)
             serializers= customerSerializer(Customer)
-            return Response(serializers.data, status=status.HTTP_200_OK)
+            return Response({"phone_number":phone_number,"data":serializers.data}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)   
         
-
+#delete customer
 class delcustomer(APIView):
     authentication_classes = []
     permission_classes = []
