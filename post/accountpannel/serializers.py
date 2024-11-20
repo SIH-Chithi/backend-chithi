@@ -33,7 +33,7 @@ class customerSerializer(serializers.ModelSerializer):
         model = customer
         fields = ['first_name', 'last_name', 'address_details', 'country', 'city_district', 'pincode', 'Email','state']      
         
-          
+
 
 
 """ class employeetoken(TokenObtainPairSerializer):
