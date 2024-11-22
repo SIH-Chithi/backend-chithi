@@ -125,3 +125,80 @@ class NSH(models.Model):
         
         def __str__(self):
             return f"{self.nsh_id} - {self.office_name}"
+        
+        
+class senders_details(models.Model):
+    consigment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)
+    first_name=models.CharField(max_length=50)
+    last_name=models.CharField(max_length=50)
+    pincode=models.IntegerField()
+    address=models.TextField()
+    city_district=models.CharField(max_length=50)
+    state=models.CharField(max_length=50)
+    country=models.CharField(max_length=50)
+    phone_number=models.IntegerField()
+    
+    def __str__(self):
+        return f"{self.consigment_id} - {self.first_name} {self.last_name}"
+
+
+class receiver_details(models.Model):
+    consignment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)
+    first_name=models.CharField(max_length=50)
+    last_name=models.CharField(max_length=50)
+    pincode=models.IntegerField()
+    address=models.TextField()
+    city_district=models.CharField(max_length=50)
+    state=models.CharField(max_length=50)
+    country=models.CharField(max_length=50)
+    phone_number=models.IntegerField()
+    
+    def __str__(self):
+        return f"{self.consigment_id} - {self.first_name} {self.last_name}"    
+    
+class consignment_qr(models.Model):
+    consignment_id = models.ForeignKey('consignment', on_delete=models.CASCADE)
+    qr_url=models.URLField()
+    barcode_url=models.URLField()
+    
+    def __str__(self):
+        return str(self.consignment_id) 
+    
+class consignment_pickup(models.Model):
+    consignment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)
+    pickup_date=models.DateTimeField()
+    pickup_time=models.TimeField()
+    pickup_amount=models.FloatField()
+    pickup_status=models.BooleanField(default=False)
+    
+    def __str__(self):
+        return str(self.consignment_id)    
+    
+class parcel(models.Model):
+    consignment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)
+    parcel_id=models.AutoField(primary_key=True)
+    weight=models.FloatField()
+    length=models.FloatField()
+    breadth=models.FloatField()
+    height=models.FloatField()
+    price=models.FloatField()    
+    
+    def __str__(self):
+        return f"{self.consignment_id} - {self.parcel_id}"
+
+parcel_types=(
+    ('Document','Document'),
+    ('Parcel','Parcel')
+)  
+class consignment(models.Model):        
+    consignment_id=models.AutoField(primary_key=True)
+    type=models.CharField(max_length=50,choices=parcel_types)
+    created_place=models.IntegerField()
+    created_date=models.DateTimeField(auto_now_add=True)
+    created_time=models.TimeField(auto_now_add=True)
+    Amount=models.FloatField()
+    is_payed=models.BooleanField(default=False)
+    
+    
+    def __str__(self):
+        return f"{self.consignment_id} - {self.type}"
