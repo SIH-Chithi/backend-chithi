@@ -57,3 +57,71 @@ class customer(models.Model):
         
     def __str__(self):
         return f"{self.user.phone_number} - {self.first_name} {self.last_name}"    
+    
+    
+class pincode(models.Model):
+    pincode=models.IntegerField(primary_key=True)
+    division_name=models.CharField(max_length=50)
+    region_name=models.CharField(max_length=50)
+    circle_name=models.CharField(max_length=50)
+    district_name=models.CharField(max_length=50)
+    state_name=models.CharField(max_length=50)
+    
+    def __str__(self):
+        return f"{self.pincode} - {self.district_name}, {self.state_name}"
+    
+class SPO(models.Model):
+    spo_id=models.AutoField(primary_key=True)
+    pincode=models.ForeignKey(pincode, on_delete=models.CASCADE)  
+    office_name=models.CharField(max_length=100)
+    divsion_name=models.CharField(max_length=50)
+    circle_name=models.CharField(max_length=50)
+    district_name=models.CharField(max_length=50)
+    state_name=models.CharField(max_length=50)
+    region_name=models.CharField(max_length=50)
+    
+    def __str__(self):
+        return f"{self.spo_id} - {self.office_name}"
+    
+class HPO(models.Model):
+    hpo_id = models.AutoField(primary_key=True)
+    ho_pincode = models.IntegerField(unique=True)
+    office_name = models.CharField(max_length=100)
+    region_name = models.CharField(max_length=50)
+    division_name = models.CharField(max_length=50)
+    circle_name = models.CharField(max_length=50)
+    district_name = models.CharField(max_length=50)
+    state_name = models.CharField(max_length=50)
+    spo = models.ManyToManyField(SPO, related_name='hpos')  # Many SPOs related to one HPO
+
+    def __str__(self):
+        return f"{self.circle_name} - {self.office_name}"
+    
+    
+class ICH(models.Model):
+    ich_id=models.AutoField(primary_key=True)
+    ich_pincode=models.IntegerField(unique=True)
+    division_name=models.CharField(max_length=50)
+    region_name=models.CharField(max_length=50)
+    circle_name=models.CharField(max_length=50)
+    district_name=models.CharField(max_length=50)
+    state_name=models.CharField(max_length=50)
+    office_name=models.CharField(max_length=100)
+    hpo = models.ManyToManyField(HPO, related_name='ichs')  
+    
+    def __str__(self):
+        return f"{self.ich_id} - {self.office_name}"
+
+class NSH(models.Model):
+        nsh_id=models.AutoField(primary_key=True)
+        nsh_pincode=models.IntegerField(unique=True)
+        division_name=models.CharField(max_length=50)
+        region_name=models.CharField(max_length=50)
+        circle_name=models.CharField(max_length=50)
+        district_name=models.CharField(max_length=50)
+        state_name=models.CharField(max_length=50)
+        office_name=models.CharField(max_length=100)
+        ich=models.ManyToManyField(ICH, related_name='nshs')
+        
+        def __str__(self):
+            return f"{self.nsh_id} - {self.office_name}"
