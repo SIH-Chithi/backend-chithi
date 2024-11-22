@@ -8,6 +8,9 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+import pandas as pd
+import csv
+from collections import defaultdict
 
 
 # Customer login : send otp to phone number
@@ -184,3 +187,219 @@ class delcustomer(APIView):
             return Response({"message": "User deleted successfully"}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+class book_consignment(APIView):
+    authentication_classes = []
+    permission_classes = []
+    
+    def post(self,request):
+    
+            token=request.headers["Authorization"]
+            if not token:
+                return Response({"token": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+            token=token.split(" ")[1]
+            user_id, phone_number,exp = decode_token(token)
+            if not (user_id or phone_number or exp):
+                return Response({"token": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user= getuser(phone_number)
+            if not user:
+                return Response({"message": "User does not exist with this phone number"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            data=request.data
+            if not data:
+                return Response({"data": "Data is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if data["is_payed"]==False:
+                return Response({"message": "Payment is required"}, status=status.HTTP_400_BAD_REQUEST)
+            print(phone_number)
+            consignment_obj=consignment.objects.create(
+                type=data["type"],
+                created_place=phone_number,
+                Amount=data["Amount"],
+                is_payed=data["is_payed"],
+                is_pickup=data["is_pickup"]
+                )
+            
+            senders_details.objects.create(
+                consignment_id=consignment_obj,
+                first_name=data["sender"]["first_name"],
+                last_name=data["sender"]["last_name"],
+                pincode=data["sender"]["pincode"],
+                address=data["sender"]["address"],
+                city_district=data["sender"]["city_district"],
+                state=data["sender"]["state"],
+                country=data["sender"]["country"],
+                phone_number=data["sender"]["phone_number"]
+            )
+            
+            receiver_details.objects.create(
+                consignment_id=consignment_obj,
+                first_name=data["receiver"]["first_name"],
+                last_name=data["receiver"]["last_name"],
+                pincode=data["receiver"]["pincode"],
+                address=data["receiver"]["address"],
+                city_district=data["receiver"]["city_district"],
+                state=data["receiver"]["state"],
+                country=data["receiver"]["country"],
+                phone_number=data["receiver"]["phone_number"]
+            )
+            
+            if data["type"]=="Parcel":
+                parcel.objects.create(
+                    consignment_id=consignment_obj,
+                    weight=data["parcel"]["weight"],
+                    length=data["parcel"]["length"],
+                    breadth=data["parcel"]["breadth"],
+                    height=data["parcel"]["height"],
+                    price=data["parcel"]["price"]
+                )
+            
+            if data["is_pickup"]==True:
+                consignment_pickup.objects.create(
+                    consignment_id=consignment_obj,
+                    pickup_date=data["pickup"]["pickup_date"],
+                    pickup_time=data["pickup"]["pickup_time"],
+                    pickup_amount=data["pickup"]["pickup_amount"]
+                )    
+                
+            return Response({"message": "Consignment booked successfully"}, status=status.HTTP_200_OK)    
+                
+                
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+        
+class importdata(APIView):
+    def get(self,request):
+        csv_path = r"D:\backend-chithi\post\accountpannel\unique_pincode_data.csv"
+        try:
+            with open(csv_path, newline='',encoding='utf-8') as file:
+                reader=csv.DictReader(file)
+                pincodes=[]
+                for row in reader:
+                    try:
+                        pincodes.append(pincode(
+                            pincode=row['pincode'],
+                            division_name=row['division_name'],
+                            region_name=row['region_name'],
+                            circle_name=row['circle_name'],
+                            district_name=row['district_name'],
+                            state_name=row['state_name']
+                        ))
+                    except KeyError as e:
+                        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                pincode.objects.bulk_create(pincodes,ignore_conflicts=True)
+                return Response({"message": "Data imported successfully"}, status=status.HTTP_200_OK)
+        except FileNotFoundError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+class importspo(APIView):
+    def get(self,request):
+        csv_path = r"D:\backend-chithi\post\accountpannel\suboffice.csv"
+        try:
+            with open(csv_path, newline='',encoding='utf-8') as file:
+                reader=csv.DictReader(file)
+                spos=[]
+                for row in reader:
+                    try:
+                        pin=row['pincode']
+                        pincodes=pincode.objects.get(pincode=pin)
+                        spos.append(SPO(
+                            pincode=pincodes,
+                            office_name=row['office_name'],
+                            divsion_name=row['division_name'],
+                            region_name=row['region_name'],
+                            circle_name=row['circle_name'],
+                            district_name=row['district_name'],
+                            state_name=row['state_name'],
+                            
+                        ))
+                    except KeyError as e:
+                        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                SPO.objects.bulk_create(spos,ignore_conflicts=True)
+                return Response({"message": "Data imported successfully"}, status=status.HTTP_200_OK)
+        except FileNotFoundError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
+        
+
+
+
+def import_hpo_csv_with_path(request):
+    try:
+        file_path = r"D:\backend-chithi\post\accountpannel\Modified_PincodeFile.csv"
+
+        with open(file_path, 'r', encoding='utf-8') as file:
+            reader = csv.DictReader(file)
+
+            # Preload all SPOs into a dictionary by pincode
+            all_spos = SPO.objects.select_related('pincode').all()
+            spo_dict = defaultdict(list)
+            for spo in all_spos:
+                spo_dict[spo.pincode.pincode].append(spo)
+
+            # Collect HPOs for bulk creation
+            hpo_objects = []
+            hpo_mapping = {}
+            new_hpos = []
+
+            for row in reader:
+                ho_pincode = int(row['HO Pincode'])
+                office_name = row['Office Name']
+                region_name = row['Region Name']
+                division_name = row['Division Name']
+                circle_name = row['Circle Name']
+                district_name = row['District Name']
+                state_name = row['State Name']
+
+                hpo, created = HPO.objects.get_or_create(
+                    ho_pincode=ho_pincode,
+                    defaults={
+                        'office_name': office_name,
+                        'region_name': region_name,
+                        'division_name': division_name,
+                        'circle_name': circle_name,
+                        'district_name': district_name,
+                        'state_name': state_name,
+                    }
+                )
+
+                if created:
+                    new_hpos.append(hpo)
+                else:
+                    hpo_mapping[ho_pincode] = hpo
+
+                # Add relationships between HPO and SPOs
+                so_pincodes = eval(row['SO Pincodes'])
+                for pincode in so_pincodes:
+                    if pincode in spo_dict:
+                        for spo in spo_dict[pincode]:
+                            hpo.spo.add(spo)
+
+            # Bulk create new HPOs
+            HPO.objects.bulk_create(new_hpos)
+
+        return JsonResponse({'message': 'CSV imported successfully with optimizations.'}, status=200)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
