@@ -3,6 +3,7 @@ from django.db import models
 # Create your models here.
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from datetime import timedelta , datetime
 
 # Create your models here
 class UserManager(BaseUserManager):
@@ -128,7 +129,7 @@ class NSH(models.Model):
         
         
 class senders_details(models.Model):
-    consigment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)
+    consignment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)
     first_name=models.CharField(max_length=50)
     last_name=models.CharField(max_length=50)
     pincode=models.IntegerField()
@@ -136,10 +137,10 @@ class senders_details(models.Model):
     city_district=models.CharField(max_length=50)
     state=models.CharField(max_length=50)
     country=models.CharField(max_length=50)
-    phone_number=models.IntegerField()
+    phone_number=models.CharField(max_length=10)
     
     def __str__(self):
-        return f"{self.consigment_id} - {self.first_name} {self.last_name}"
+        return f"{self.consignment_id} - {self.first_name} {self.last_name}"
 
 
 class receiver_details(models.Model):
@@ -151,10 +152,10 @@ class receiver_details(models.Model):
     city_district=models.CharField(max_length=50)
     state=models.CharField(max_length=50)
     country=models.CharField(max_length=50)
-    phone_number=models.IntegerField()
+    phone_number=models.CharField(max_length=10)
     
     def __str__(self):
-        return f"{self.consigment_id} - {self.first_name} {self.last_name}"    
+        return f"{self.consignment_id} - {self.first_name} {self.last_name}"    
     
 class consignment_qr(models.Model):
     consignment_id = models.ForeignKey('consignment', on_delete=models.CASCADE)
@@ -175,7 +176,7 @@ class consignment_pickup(models.Model):
         return str(self.consignment_id)    
     
 class parcel(models.Model):
-    consignment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)
+    consignment_id=models.OneToOneField('consignment', on_delete=models.CASCADE)
     parcel_id=models.AutoField(primary_key=True)
     weight=models.FloatField()
     length=models.FloatField()
@@ -193,10 +194,11 @@ parcel_types=(
 class consignment(models.Model):        
     consignment_id=models.AutoField(primary_key=True)
     type=models.CharField(max_length=50,choices=parcel_types)
-    created_place=models.IntegerField()
+    created_place=models.CharField(max_length=10)
     created_date=models.DateTimeField(auto_now_add=True)
     created_time=models.TimeField(auto_now_add=True)
     Amount=models.FloatField()
+    is_pickup=models.BooleanField(default=False)
     is_payed=models.BooleanField(default=False)
     
     

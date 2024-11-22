@@ -189,14 +189,84 @@ class delcustomer(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         
-   
-   
-   
-   
-   
-   
-   
-   
+class book_consignment(APIView):
+    authentication_classes = []
+    permission_classes = []
+    
+    def post(self,request):
+    
+            token=request.headers["Authorization"]
+            if not token:
+                return Response({"token": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+            token=token.split(" ")[1]
+            user_id, phone_number,exp = decode_token(token)
+            if not (user_id or phone_number or exp):
+                return Response({"token": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user= getuser(phone_number)
+            if not user:
+                return Response({"message": "User does not exist with this phone number"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            data=request.data
+            if not data:
+                return Response({"data": "Data is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if data["is_payed"]==False:
+                return Response({"message": "Payment is required"}, status=status.HTTP_400_BAD_REQUEST)
+            print(phone_number)
+            consignment_obj=consignment.objects.create(
+                type=data["type"],
+                created_place=phone_number,
+                Amount=data["Amount"],
+                is_payed=data["is_payed"],
+                is_pickup=data["is_pickup"]
+                )
+            
+            senders_details.objects.create(
+                consignment_id=consignment_obj,
+                first_name=data["sender"]["first_name"],
+                last_name=data["sender"]["last_name"],
+                pincode=data["sender"]["pincode"],
+                address=data["sender"]["address"],
+                city_district=data["sender"]["city_district"],
+                state=data["sender"]["state"],
+                country=data["sender"]["country"],
+                phone_number=data["sender"]["phone_number"]
+            )
+            
+            receiver_details.objects.create(
+                consignment_id=consignment_obj,
+                first_name=data["receiver"]["first_name"],
+                last_name=data["receiver"]["last_name"],
+                pincode=data["receiver"]["pincode"],
+                address=data["receiver"]["address"],
+                city_district=data["receiver"]["city_district"],
+                state=data["receiver"]["state"],
+                country=data["receiver"]["country"],
+                phone_number=data["receiver"]["phone_number"]
+            )
+            
+            if data["type"]=="Parcel":
+                parcel.objects.create(
+                    consignment_id=consignment_obj,
+                    weight=data["parcel"]["weight"],
+                    length=data["parcel"]["length"],
+                    breadth=data["parcel"]["breadth"],
+                    height=data["parcel"]["height"],
+                    price=data["parcel"]["price"]
+                )
+            
+            if data["is_pickup"]==True:
+                consignment_pickup.objects.create(
+                    consignment_id=consignment_obj,
+                    pickup_date=data["pickup"]["pickup_date"],
+                    pickup_time=data["pickup"]["pickup_time"],
+                    pickup_amount=data["pickup"]["pickup_amount"]
+                )    
+                
+            return Response({"message": "Consignment booked successfully"}, status=status.HTTP_200_OK)    
+                
+                
    
    
    
