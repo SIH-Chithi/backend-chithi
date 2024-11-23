@@ -317,7 +317,7 @@ class get_consignment_list(APIView):
         
         try:
             consignments=consignment.objects.filter(user=user)
-            serializers=get_consignment_list(consignments, many=True)
+            serializers=get_consignmentlist(consignments, many=True)
             if not serializers:
                 return Response({"messages": "No consignments found"}, status=status.HTTP_400_BAD_REQUEST)
             
