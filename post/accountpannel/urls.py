@@ -16,4 +16,6 @@ urlpatterns = [
     path('importhpo/', import_hpo_csv_with_path, name='importhpo'),
     path('bookconsignment/', book_consignment.as_view(), name='bookconsignment'),
     path('calculatefare/', calculate_postage.as_view(), name='calculatefare'),
+    path('getconsignmentlist/', get_consignment_list.as_view(), name='getconsignmentlist'),
+    path('getconsignmentdetails/', get_consignment_details.as_view(), name='getconsignmentdetails'),
 ]

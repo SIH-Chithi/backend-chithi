@@ -34,7 +34,57 @@ class customerSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name', 'address_details', 'country', 'city_district', 'pincode', 'Email','state']      
         
 
+class get_consignment_list(serializers.ModelSerializer):
+    class Meta:
+        model=consignment
+        fields=['consignment_id','created_date','status','Amount','type']
+        
+class get_consignment_journey(serializers.Serializer):
+    created_at=serializers.CharField()
+    created_place_id=serializers.CharField()
+    date_time=serializers.DateTimeField()
+    process=serializers.CharField()
+    
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
 
+        # Extract the created_place_id and process fields
+        created_place_id = representation.get("created_place_id")
+        created_at = representation.get("created_at")
+
+        if created_at == "spo":
+            try:
+                spo = SPO.objects.get(spo_id=created_place_id)
+                representation["created_place_name"] = spo.office_name
+            except SPO.DoesNotExist:
+                representation["created_place_name"] = "Unknown SPO"
+        elif created_at == "hpo":
+            try:
+                hpo = HPO.objects.get(hpo_id=created_place_id)
+                representation["created_place_name"] = hpo.office_name
+            except HPO.DoesNotExist:
+                representation["created_place_name"] = "Unknown HPO"
+        elif created_at == "ich":
+            try:
+                ich = ICH.objects.get(ich_id=created_place_id)
+                representation["created_place_name"] = ich.office_name
+            except ICH.DoesNotExist:
+                representation["created_place_name"] = "Unknown ICH"
+        elif created_at == "nsh":
+            try:
+                nsh = NSH.objects.get(nsh_id=created_place_id)
+                representation["created_place_name"] = nsh.office_name
+            except NSH.DoesNotExist:
+                representation["created_place_name"] = "Unknown NSH"
+        else:
+            representation["created_place_name"] = "Invalid Process"
+
+        # Remove created_place_id and add created_place_name for clarity
+        del representation["created_place_id"]
+        return representation
+                
+    
 
 """ class employeetoken(TokenObtainPairSerializer):
     employee_id = serializers.CharField()

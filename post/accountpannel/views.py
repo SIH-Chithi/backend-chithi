@@ -217,6 +217,7 @@ class book_consignment(APIView):
             print(phone_number)
             consignment_obj=consignment.objects.create(
                 type=data["type"],
+                user=user,
                 created_place=phone_number,
                 Amount=data["Amount"],
                 is_payed=data["is_payed"],
@@ -265,7 +266,8 @@ class book_consignment(APIView):
                     pickup_amount=data["pickup"]["pickup_amount"]
                 )    
                 
-            return Response({"message": "Consignment booked successfully"}, status=status.HTTP_200_OK)    
+            return Response({"message": "Consignment booked successfully",
+                            "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)    
         
 #calculate postage
 class calculate_postage(APIView):
@@ -303,8 +305,58 @@ class calculate_postage(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
+#getconsignment list
+class get_consignment_list(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            phone_number, user=token_process(request)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            consignments=consignment.objects.filter(user=user)
+            serializers=get_consignment_list(consignments, many=True)
+            if not serializers:
+                return Response({"messages": "No consignments found"}, status=status.HTTP_400_BAD_REQUEST)
             
+            return Response({"data" :serializers.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+class get_consignment_details(APIView):
+    def post(self,request):
+        try:
+            consignment_id=request.data.get("consignment_id")
+            if not consignment_id:
+                return Response({"consignment_id": "Consignment id is required"}, status=status.HTTP_400_BAD_REQUEST)
             
+            order=consignment.objects.get(consignment_id=consignment_id)
+            serializer={
+                "consignment_id":order.consignment_id,
+                "type":order.type,
+                "created_date":order.created_date,
+                "Amount":order.Amount,
+                "status":order.status
+                
+                }
+            
+            journey=consignment_journey.objects.filter(consignment_id=consignment_id)
+    
+            
+            if journey:
+                seria=get_consignment_journey(journey, many=True)
+                
+            else:
+                seria=None
+            
+            return JsonResponse({"order": serializer, 
+                            "journey": seria.data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+            
+        
 class importdata(APIView):
     def get(self,request):
         csv_path = r"D:\backend-chithi\post\accountpannel\unique_pincode_data.csv"
