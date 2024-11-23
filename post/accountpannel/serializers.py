@@ -34,7 +34,7 @@ class customerSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name', 'address_details', 'country', 'city_district', 'pincode', 'Email','state']      
         
 
-class get_consignment_list(serializers.ModelSerializer):
+class get_consignmentlist(serializers.ModelSerializer):
     class Meta:
         model=consignment
         fields=['consignment_id','created_date','status','Amount','type']
