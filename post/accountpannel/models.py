@@ -157,13 +157,7 @@ class receiver_details(models.Model):
     def __str__(self):
         return f"{self.consignment_id} - {self.first_name} {self.last_name}"    
     
-class consignment_qr(models.Model):
-    consignment_id = models.ForeignKey('consignment', on_delete=models.CASCADE)
-    qr_url=models.URLField()
-    barcode_url=models.URLField()
-    
-    def __str__(self):
-        return str(self.consignment_id) 
+
     
 class consignment_pickup(models.Model):
     consignment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)
@@ -204,3 +198,38 @@ class consignment(models.Model):
     
     def __str__(self):
         return f"{self.consignment_id} - {self.type}"
+    
+class consignment_qr(models.Model):
+    consignment_id = models.OneToOneField('consignment', on_delete=models.CASCADE)    
+    barcode_url=models.URLField()
+    qr_url=models.URLField()
+    created_date=models.DateTimeField(auto_now_add=True)
+    created_by=models.CharField(max_length=50)
+    created_by_id=models.CharField(max_length=50)
+    
+    def __str__(self):
+        return f"{self.consignment_id} - {self.created_by}"
+    
+    
+class adjacent_nsh_data(models.Model):
+    nsh1=models.ForeignKey('NSH',on_delete=models.CASCADE,related_name='nsh1_relations') 
+    nsh2=models.ForeignKey('NSH',on_delete=models.CASCADE,related_name='nsh2_relations')
+    distance=models.IntegerField(blank=True,null=True)
+    time=models.IntegerField(blank=True,null=True)
+    traffic=models.IntegerField(blank=True,null=True)
+    effective_weight=models.IntegerField(blank=True,null=True)
+    
+    def calculate_effective_weight(self):
+        try:
+            if self.distance and self.time and self.traffic:
+                return self.distance * self.time * self.traffic
+        except Exception as e:
+            print(e)
+            return None
+        
+    def save(self, *args, **kwargs):
+        self.effective_weight = self.calculate_effective_weight()
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.nsh1}-{self.nsh2}"

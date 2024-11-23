@@ -10,6 +10,18 @@ from jwt.exceptions import ExpiredSignatureError, DecodeError, InvalidTokenError
 import jwt
 from django.conf import settings
 import requests
+import os
+from dotenv import load_dotenv
+import cloudinary
+import cloudinary.uploader
+import qrcode
+from barcode import Code128
+from barcode.writer import ImageWriter
+from io import BytesIO
+from django.http import JsonResponse
+
+from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
 
 
 def verify_otp(otp,phone_number):
@@ -148,3 +160,347 @@ def getuser(phone_number):
         return user
     except User.DoesNotExist:
         return None    
+    
+    
+cloudinary.config(
+    cloud_name = os.getenv('cloud_name'),
+    api_key = os.getenv('api_key'),
+    api_secret=os.getenv('api_secret'),
+    secure=True
+)    
+
+
+# Generate QR code and barcode
+#payload=consignment_id
+
+def generate_qr(payload):
+    # Generate QR Code
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_H,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(payload)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color="black", back_color="white")
+
+    # Save QR code in memory
+    qr_buffer = BytesIO()
+    qr_img.save(qr_buffer, format="PNG")
+    qr_buffer.seek(0)
+
+    # Upload QR code to Cloudinary
+    qr_response = cloudinary.uploader.upload(
+        qr_buffer,
+        public_id=f"consignments/{payload}_qr",
+        folder="consignments"
+    )
+    qr_url = qr_response.get("secure_url")
+
+    # Generate Barcode
+    barcode_buffer = BytesIO()
+    barcode = Code128(payload, writer=ImageWriter())
+    barcode.write(barcode_buffer)
+    barcode_buffer.seek(0)
+
+    # Upload Barcode to Cloudinary
+    barcode_response = cloudinary.uploader.upload(
+        barcode_buffer,
+        public_id=f"consignments/{payload}_barcode",
+        folder="consignments"
+    )
+    barcode_url = barcode_response.get("secure_url")
+
+    return {
+        "qr_code_url": qr_url,
+        "barcode_url": barcode_url
+    }
+
+#return NSH from pincode            
+def get_nsh_from_pincode(pin, process):
+    try:
+        if not pin:
+            return Response({"pincode": "Pincode is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if process not in ["start", "end"]:
+            return Response({"process": "Invalid process value. Use 'start' or 'end'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        route = {}
+        suffix = process  # 'start' or 'end'
+
+        pins = pincode.objects.get(pincode=pin)
+        spos = SPO.objects.get(pincode=pins)
+        route[f'spo_{suffix}'] = spos.spo_id
+
+        hpos = HPO.objects.get(spo=spos)
+        route[f'hpo_{suffix}'] = hpos.hpo_id
+
+        ichs = ICH.objects.get(hpo=hpos)
+        route[f'ich_{suffix}'] = ichs.ich_id
+
+        nsh = NSH.objects.get(ich=ichs)
+        route[f'nsh_{suffix}'] = nsh.nsh_id
+
+        return JsonResponse({"data": route}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return JsonResponse({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
+    
+#calculate postage
+
+
+def calculate_distance(pincode1, pincode2):
+    """Calculate the distance between two pincodes."""
+    geolocator = Nominatim(user_agent="pincode_distance_calculator")
+
+    try:
+        # Get the locations for both pincodes
+        location1 = geolocator.geocode(pincode1)
+        location2 = geolocator.geocode(pincode2)
+
+        if location1 is None or location2 is None:
+            return None, "One or both pincodes could not be resolved to a location."
+
+        # Extract coordinates
+        coords_1 = (location1.latitude, location1.longitude)
+        coords_2 = (location2.latitude, location2.longitude)
+
+        # Calculate distance
+        distance = geodesic(coords_1, coords_2).kilometers
+        return distance, None
+
+    except Exception as e:
+        return None, f"An error occurred: {e}"
+
+
+def calculate_document_cost(distance, post_name):
+    """Calculate the cost for sending documents."""
+    if post_name.lower() == "speedpost":
+        if distance <= 200:
+            return "₹35 (for up to 50 grams)"
+        elif distance <= 1000:
+            return "₹41 (for up to 50 grams)"
+        elif distance <= 2000:
+            return "₹47 (for up to 50 grams)"
+        else:
+            return "₹53 (for up to 50 grams)"
+    else:
+        if distance <= 200:
+            return "₹20 (for up to 20 grams)"
+        elif distance <= 1000:
+            return "₹30 (for up to 50 grams)"
+        else:
+            return "₹42 (for up to 50 grams)"
+
+
+def calculate_cost(weight, distance, post_name):
+    """Calculate the cost based on weight and distance."""
+    if post_name.lower() == "speedpost":
+        if weight <= 50:
+            if distance <= 8:
+                return 18
+            elif distance <= 200:
+                return 41
+            elif distance <= 1000:
+                return 41
+            elif distance <= 2000:
+                return 41
+            else:
+                return 41
+        elif weight > 50 and weight <= 200:
+            if distance < 8:
+                return 30
+            elif distance <= 200:
+                return 41
+            elif distance <= 1000:
+                return 47
+            elif distance <= 2000:
+                return 71
+            else:
+                return 83
+        elif weight > 200 and weight <= 500:
+            if distance < 8:
+                return 35
+            elif distance <= 200:
+                return 59
+            elif distance <= 1000:
+                return 71
+            elif distance <= 2000:
+                return 94
+            else:
+                return 106
+        elif weight > 500 and weight <= 1000:
+            if distance < 8:
+                return 47
+            elif distance <= 200:
+                return 77
+            elif distance <= 1000:
+                return 106
+            elif distance <= 2000:
+                return 142
+            else:
+                return 165
+        elif weight > 1000 and weight <= 1500:
+            if distance < 8:
+                return 59
+            elif distance <= 200:
+                return 94
+            elif distance <= 1000:
+                return 142
+            elif distance <= 2000:
+                return 189
+            else:
+                return 224
+        elif weight > 1500 and weight <= 2000:
+            if distance < 8:
+                return 71
+            elif distance <= 200:
+                return 112
+            elif distance <= 1000:
+                return 177
+            elif distance <= 2000:
+                return 236
+            else:
+                return 283
+        elif weight > 2000 and weight <= 2500:
+            if distance < 8:
+                return 83
+            elif distance <= 200:
+                return 130
+            elif distance <= 1000:
+                return 212
+            elif distance <= 2000:
+                return 283
+            else:
+                return 342
+        elif weight > 2500 and weight <= 3000:
+            if distance < 8:
+                return 94
+            elif distance <= 200:
+                return 148
+            elif distance <= 1000:
+                return 248
+            elif distance <= 2000:
+                return 330
+            else:
+                return 401
+        elif weight > 3000 and weight <= 3500:
+            if distance < 8:
+                return 106
+            elif distance <= 200:
+                return 165
+            elif distance <= 1000:
+                return 283
+            elif distance <= 2000:
+                return 378
+            else:
+                return 460
+        elif weight > 3500 and weight <= 4000:
+            if distance < 8:
+                return 118
+            elif distance <= 200:
+                return 183
+            elif distance <= 1000:
+                return 319
+            elif distance <= 2000:
+                return 425
+            else:
+                return 519
+        elif weight > 4000 and weight <= 4500:
+            if distance < 8:
+                return 130
+            elif distance <= 200:
+                return 201
+            elif distance <= 1000:
+                return 354
+            elif distance <= 2000:
+                return 472
+            else:
+                return 578
+        elif weight > 4500 and weight <= 5000:
+            if distance < 8:
+                return 142
+            elif distance <= 200:
+                return 218
+            elif distance <= 1000:
+                return 389
+            elif distance <= 2000:
+                return 519
+            else:
+                return 637
+        else:
+            return "Enter values in the limited range."
+    else:
+        if weight<=500:
+            if distance<8:
+                return 30
+            elif distance<=200:
+                return 50
+            elif distance<=1000:
+                return 60
+            elif distance<=2000:
+                return 70
+            elif distance<=5000:
+                return 90
+            else:
+                return "no data"
+        
+        elif weight<=1000 and weight<5000:
+                if distance<8:
+                    return 38
+                elif distance<=200:
+                    return 64
+                elif distance<=1000:
+                    return 78
+                elif distance<=2000:
+                    return 100
+                elif distance<=5000:
+                    return 110
+                else:
+                    return "no data"
+        
+        else:
+                if distance<8:
+                    return 40
+                elif distance<=200:
+                    return 66
+                elif distance<=1000:
+                    return 80
+                elif distance<=2000:
+                    return 102
+                elif distance<=5000:
+                    return 112
+                else:
+                    return "no data"
+            
+            
+
+#token 
+def token_process(request):
+    try:
+        token = request.headers.get("Authorization")  # Use .get() to avoid KeyError
+        if not token:
+            raise ValueError("Token is required")
+
+        token = token.split(" ")[1]
+        user_id, phone_number, exp = decode_token(token)
+        if not (user_id and phone_number and exp):
+            raise ValueError("Invalid token")
+
+        user = getuser(phone_number)
+        if not user:
+            raise ValueError("User does not exist with this phone number")
+
+        return phone_number, user
+
+    except Exception as e:
+        raise ValueError(str(e))
+
+    
+
+
+
+
+
+    
+        
