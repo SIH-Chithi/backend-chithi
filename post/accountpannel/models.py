@@ -96,7 +96,7 @@ class HPO(models.Model):
     spo = models.ManyToManyField(SPO, related_name='hpos')  # Many SPOs related to one HPO
 
     def __str__(self):
-        return f"{self.circle_name} - {self.office_name}"
+        return f"{self.hpo_id} - {self.office_name}"
     
     
 class ICH(models.Model):
@@ -187,6 +187,7 @@ parcel_types=(
 )  
 class consignment(models.Model):        
     consignment_id=models.AutoField(primary_key=True)
+    user=models.ForeignKey(User,on_delete=models.CASCADE)
     type=models.CharField(max_length=50,choices=parcel_types)
     created_place=models.CharField(max_length=10)
     created_date=models.DateTimeField(auto_now_add=True)
@@ -194,6 +195,7 @@ class consignment(models.Model):
     Amount=models.FloatField()
     is_pickup=models.BooleanField(default=False)
     is_payed=models.BooleanField(default=False)
+    status=models.BooleanField(default=False)
     
     
     def __str__(self):
@@ -209,6 +211,27 @@ class consignment_qr(models.Model):
     
     def __str__(self):
         return f"{self.consignment_id} - {self.created_by}"
+    
+office_types=(
+    ('spo','spo'),
+    ('hpo','hpo'),
+    ('ich','ich'),
+    ('nsh','nsh')
+)  
+
+process=(
+    ('check_in','check_in'),
+    ('check_out','check_out')
+)
+class consignment_journey(models.Model):
+    consignment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)
+    created_at=models.CharField(max_length=50,choices=office_types)  
+    created_place_id=models.IntegerField()
+    date_time=models.DateTimeField(auto_now_add=True)
+    process=models.CharField(max_length=10,choices=process)
+    
+    def __str__(self):
+        return f"{self.consignment_id} - {self.created_at}"
     
     
 class adjacent_nsh_data(models.Model):
