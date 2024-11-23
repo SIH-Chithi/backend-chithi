@@ -189,6 +189,7 @@ class delcustomer(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
         
+#book_consignment   
 class book_consignment(APIView):
     authentication_classes = []
     permission_classes = []
@@ -265,28 +266,45 @@ class book_consignment(APIView):
                 )    
                 
             return Response({"message": "Consignment booked successfully"}, status=status.HTTP_200_OK)    
-                
-                
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
-   
         
+#calculate postage
+class calculate_postage(APIView):
+    
+    def post(self,request):
+        try:    
+            data=request.data
+            if not data:
+                return Response({"data": "Data is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            pincode1 = data["sender_pincode"]
+            pincode2 = data["receiver_pincode"]
+            article_type=data["article_type"]
+            service=data["service"]
+            if article_type=='parcel':
+                weight=data["weight"]
+            
+            if not pincode1 or not pincode2 or not article_type or not service :
+                return Response({"fields": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            distance,error=calculate_distance(pincode1, pincode2)
+            if error:
+                return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+            if article_type=='document':
+                cost=calculate_document_cost(distance, service)
+            
+            elif article_type=='parcel':
+                cost=calculate_cost(weight,distance,service)
+                
+            else:
+                return Response({"error": "Invalid article type"}, status=status.HTTP_400_BAD_REQUEST)       
+            
+            return Response({"distance": distance, "cost": cost}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+            
+            
 class importdata(APIView):
     def get(self,request):
         csv_path = r"D:\backend-chithi\post\accountpannel\unique_pincode_data.csv"

@@ -15,4 +15,5 @@ urlpatterns = [
     path('importspo/', importspo.as_view(), name='importspo'),
     path('importhpo/', import_hpo_csv_with_path, name='importhpo'),
     path('bookconsignment/', book_consignment.as_view(), name='bookconsignment'),
+    path('calculatefare/', calculate_postage.as_view(), name='calculatefare'),
 ]
