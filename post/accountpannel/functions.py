@@ -277,20 +277,20 @@ def calculate_document_cost(distance, post_name):
     """Calculate the cost for sending documents."""
     if post_name.lower() == "speedpost":
         if distance <= 200:
-            return "₹35 (for up to 50 grams)"
+            return 35
         elif distance <= 1000:
-            return "₹41 (for up to 50 grams)"
+            return 41
         elif distance <= 2000:
-            return "₹47 (for up to 50 grams)"
+            return 47
         else:
-            return "₹53 (for up to 50 grams)"
+            return 53
     else:
         if distance <= 200:
-            return "₹20 (for up to 20 grams)"
+            return 20
         elif distance <= 1000:
-            return "₹30 (for up to 50 grams)"
+            return 30
         else:
-            return "₹42 (for up to 50 grams)"
+            return 42
 
 
 def calculate_cost(weight, distance, post_name):
@@ -429,7 +429,7 @@ def calculate_cost(weight, distance, post_name):
             else:
                 return 637
         else:
-            return "Enter values in the limited range."
+            return 0
     else:
         if weight<=500:
             if distance<8:
@@ -443,7 +443,7 @@ def calculate_cost(weight, distance, post_name):
             elif distance<=5000:
                 return 90
             else:
-                return "no data"
+                return 0
         
         elif weight<=1000 and weight<5000:
                 if distance<8:
@@ -457,7 +457,7 @@ def calculate_cost(weight, distance, post_name):
                 elif distance<=5000:
                     return 110
                 else:
-                    return "no data"
+                    return 0
         
         else:
                 if distance<8:
@@ -471,7 +471,7 @@ def calculate_cost(weight, distance, post_name):
                 elif distance<=5000:
                     return 112
                 else:
-                    return "no data"
+                    return 0
             
             
 

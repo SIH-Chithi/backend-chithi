@@ -4,6 +4,7 @@ from django.db import models
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from datetime import timedelta , datetime
+from django.contrib.auth.hashers import make_password,check_password
 
 # Create your models here
 class UserManager(BaseUserManager):
@@ -237,22 +238,10 @@ class consignment_journey(models.Model):
 class adjacent_nsh_data(models.Model):
     nsh1=models.ForeignKey('NSH',on_delete=models.CASCADE,related_name='nsh1_relations') 
     nsh2=models.ForeignKey('NSH',on_delete=models.CASCADE,related_name='nsh2_relations')
-    distance=models.IntegerField(blank=True,null=True)
-    time=models.IntegerField(blank=True,null=True)
+    time=models.IntegerField(blank=True,null=True)  #in minutes
     traffic=models.IntegerField(blank=True,null=True)
-    effective_weight=models.IntegerField(blank=True,null=True)
+    capacity=models.IntegerField(blank=True,null=True)
     
-    def calculate_effective_weight(self):
-        try:
-            if self.distance and self.time and self.traffic:
-                return self.distance * self.time * self.traffic
-        except Exception as e:
-            print(e)
-            return None
-        
-    def save(self, *args, **kwargs):
-        self.effective_weight = self.calculate_effective_weight()
-        super().save(*args, **kwargs)
     
     def __str__(self):
         return f"{self.nsh1}-{self.nsh2}"
@@ -268,3 +257,28 @@ class complains(models.Model):
     
     def __str__(self):
         return f"{self.complain_id} - {self.consignment_id}"
+
+   
+class Employee(models.Model):
+    Employee_id=models.CharField(max_length=50,primary_key=True)
+    password=models.CharField(max_length=128)
+    type=models.CharField(max_length=50,choices=office_types)
+    first_name=models.CharField(max_length=50)
+    last_name=models.CharField(max_length=50)
+    address=models.TextField()
+    pincode=models.IntegerField()
+    city_district=models.CharField(max_length=50)
+    state=models.CharField(max_length=50)
+    office_id=models.IntegerField()
+    
+    def make(self,password):
+        passwords=make_password(password)
+        self.password=passwords
+        self.save()
+        return passwords
+        
+    def verify_password(self, password):
+        return check_password(password, self.password)    
+    
+    def __str__(self):
+        return f"{self.Employee_id} - {self.first_name} {self.last_name}"

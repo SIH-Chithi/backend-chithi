@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'accountpannel',
     'import_export',
+    'employee',
 ]
 
 AUTH_USER_MODEL = 'accountpannel.User'
