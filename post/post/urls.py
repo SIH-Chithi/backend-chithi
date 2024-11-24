@@ -17,7 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from accountpannel import urls
+from employee import urls
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('customer/', include('accountpannel.urls')),
+    path('employee/', include('employee.urls')),
 ]

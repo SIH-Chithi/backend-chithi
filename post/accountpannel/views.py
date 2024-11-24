@@ -284,6 +284,7 @@ class calculate_postage(APIView):
             service=data["service"]
             if article_type=='parcel':
                 weight=data["weight"]
+                
             
             if not pincode1 or not pincode2 or not article_type or not service :
                 return Response({"fields": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
