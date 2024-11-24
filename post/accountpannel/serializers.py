@@ -34,7 +34,7 @@ class customerSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name', 'address_details', 'country', 'city_district', 'pincode', 'Email','state']      
         
 
-class get_consignment_list(serializers.ModelSerializer):
+class get_consignmentlist(serializers.ModelSerializer):
     class Meta:
         model=consignment
         fields=['consignment_id','created_date','status','Amount','type']
@@ -84,7 +84,10 @@ class get_consignment_journey(serializers.Serializer):
         del representation["created_place_id"]
         return representation
                 
-    
+class get_complains_serializer(serializers.ModelSerializer):
+    class Meta:
+        model=complains
+        fields=['complain_id','consignment_id','complain','status','created_on']
 
 """ class employeetoken(TokenObtainPairSerializer):
     employee_id = serializers.CharField()

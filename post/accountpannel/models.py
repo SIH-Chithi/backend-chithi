@@ -256,3 +256,15 @@ class adjacent_nsh_data(models.Model):
     
     def __str__(self):
         return f"{self.nsh1}-{self.nsh2}"
+    
+    
+class complains(models.Model):
+    complain_id=models.AutoField(primary_key=True)
+    consignment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)    
+    user=models.ForeignKey(User,on_delete=models.CASCADE)
+    created_on=models.DateTimeField(auto_now_add=True)
+    complain=models.TextField()
+    status=models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.complain_id} - {self.consignment_id}"
