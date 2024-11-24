@@ -186,6 +186,11 @@ parcel_types=(
     ('Document','Document'),
     ('Parcel','Parcel')
 )  
+
+service_types=(
+    ('other','other'),
+    ('speedpost','speedpost'),
+)
 class consignment(models.Model):        
     consignment_id=models.AutoField(primary_key=True)
     user=models.ForeignKey(User,on_delete=models.CASCADE)
@@ -197,7 +202,7 @@ class consignment(models.Model):
     is_pickup=models.BooleanField(default=False)
     is_payed=models.BooleanField(default=False)
     status=models.BooleanField(default=False)
-    
+    service=models.CharField(max_length=50,default='other',choices=service_types)
     
     def __str__(self):
         return f"{self.consignment_id} - {self.type}"

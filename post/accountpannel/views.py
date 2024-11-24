@@ -195,26 +195,18 @@ class book_consignment(APIView):
     permission_classes = []
     
     def post(self,request):
-    
-            token=request.headers["Authorization"]
-            if not token:
-                return Response({"token": "Token is required"}, status=status.HTTP_400_BAD_REQUEST)
-            token=token.split(" ")[1]
-            user_id, phone_number,exp = decode_token(token)
-            if not (user_id or phone_number or exp):
-                return Response({"token": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            user= getuser(phone_number)
-            if not user:
-                return Response({"message": "User does not exist with this phone number"}, status=status.HTTP_400_BAD_REQUEST)
-            
+        try:
+            phone_number, user=token_process(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:    
             data=request.data
             if not data:
                 return Response({"data": "Data is required"}, status=status.HTTP_400_BAD_REQUEST)
             
             if data["is_payed"]==False:
                 return Response({"message": "Payment is required"}, status=status.HTTP_400_BAD_REQUEST)
-            print(phone_number)
+
             consignment_obj=consignment.objects.create(
                 type=data["type"],
                 user=user,
@@ -249,6 +241,8 @@ class book_consignment(APIView):
             )
             
             if data["type"]=="Parcel":
+                if not data.get("parcel"):
+                    return Response({"parcel": "Parcel details are required"}, status=status.HTTP_400_BAD_REQUEST)
                 parcel.objects.create(
                     consignment_id=consignment_obj,
                     weight=data["parcel"]["weight"],
@@ -267,8 +261,9 @@ class book_consignment(APIView):
                 )    
                 
             return Response({"message": "Consignment booked successfully",
-                            "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)    
-        
+                        "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)   
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)       
 #calculate postage
 class calculate_postage(APIView):
     
@@ -314,7 +309,7 @@ class get_consignment_list(APIView):
         try:
             phone_number, user=token_process(request)
         except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             consignments=consignment.objects.filter(user=user)
@@ -340,7 +335,8 @@ class get_consignment_details(APIView):
                 "type":order.type,
                 "created_date":order.created_date,
                 "Amount":order.Amount,
-                "status":order.status
+                "status":order.status,
+                "service":order.service
                 
                 }
             
@@ -366,7 +362,7 @@ class register_complain(APIView):
         try:
             phone_number, user=token_process(request)
         except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             data=request.data    
@@ -400,7 +396,7 @@ class get_complains(APIView):
         try:
             phone_number, user=token_process(request)
         except ValueError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             Complains=complains.objects.filter(user=user)
