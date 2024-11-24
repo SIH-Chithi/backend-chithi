@@ -84,7 +84,10 @@ class get_consignment_journey(serializers.Serializer):
         del representation["created_place_id"]
         return representation
                 
-    
+class get_complains_serializer(serializers.ModelSerializer):
+    class Meta:
+        model=complains
+        fields=['complain_id','consignment_id','complain','status','created_on']
 
 """ class employeetoken(TokenObtainPairSerializer):
     employee_id = serializers.CharField()

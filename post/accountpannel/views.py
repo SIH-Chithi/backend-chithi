@@ -321,10 +321,11 @@ class get_consignment_list(APIView):
             if not serializers:
                 return Response({"messages": "No consignments found"}, status=status.HTTP_400_BAD_REQUEST)
             
-            return Response({"data" :serializers.data}, status=status.HTTP_200_OK)
+            return Response(serializers.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
+
+#get consignment details:- giving consignment_id      
 class get_consignment_details(APIView):
     def post(self,request):
         try:
@@ -356,6 +357,62 @@ class get_consignment_details(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
             
+#register complain
+class register_complain(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            phone_number, user=token_process(request)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            data=request.data    
+            
+            if not data:
+                return Response({"data": "Data is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_id=data["consignment_id"]
+            complain=data["complain"]
+            
+            consignment_obj=consignment.objects.get(consignment_id=consignment_id)
+            if not consignment_obj:
+                return Response({"consignment_id": "Consignment does not exist with this id"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if consignment_obj.user!=user:
+                return Response({"user": "User does not have permission to register complain for this consignment"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            complain_obj=complains.objects.create(user=user,complain=complain, consignment_id=consignment_obj)
+            
+            return  Response({"message": "Complain registered successfully",
+                            "complain_id":complain_obj.complain_id}, status=status.HTTP_200_OK)
+        except Exception as e :
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+#get complains
+class get_complains(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            phone_number, user=token_process(request)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            Complains=complains.objects.filter(user=user)
+            serializers=get_complains_serializer(Complains, many=True)
+            if not serializers:
+                return Response({"messages": "No complains found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response(serializers.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+        
+        
         
 class importdata(APIView):
     def get(self,request):
