@@ -214,7 +214,7 @@ class book_consignment(APIView):
             
             if data["is_payed"]==False:
                 return Response({"message": "Payment is required"}, status=status.HTTP_400_BAD_REQUEST)
-       
+            print(phone_number)
             consignment_obj=consignment.objects.create(
                 type=data["type"],
                 user=user,
