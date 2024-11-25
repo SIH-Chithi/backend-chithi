@@ -240,7 +240,7 @@ class book_consignment(APIView):
                 phone_number=data["receiver"]["phone_number"]
             )
             
-            if data["type"]=="Parcel":
+            if data["type"]=="parcel":
                 if not data.get("parcel"):
                     return Response({"parcel": "Parcel details are required"}, status=status.HTTP_400_BAD_REQUEST)
                 parcel.objects.create(
@@ -334,6 +334,7 @@ class get_consignment_details(APIView):
                 "consignment_id":order.consignment_id,
                 "type":order.type,
                 "created_date":order.created_date,
+                "created_time":order.created_time,
                 "Amount":order.Amount,
                 "status":order.status,
                 "service":order.service
@@ -342,15 +343,16 @@ class get_consignment_details(APIView):
             
             journey=consignment_journey.objects.filter(consignment_id=consignment_id)
     
-            
+        
             if journey:
                 seria=get_consignment_journey(journey, many=True)
+                seria=seria.data
                 
             else:
                 seria=None
             
             return JsonResponse({"order": serializer, 
-                            "journey": seria.data}, status=status.HTTP_200_OK)
+                            "journey": seria}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
             
