@@ -183,8 +183,8 @@ class parcel(models.Model):
         return f"{self.consignment_id} - {self.parcel_id}"
 
 parcel_types=(
-    ('Document','Document'),
-    ('Parcel','Parcel')
+    ('document','document'),
+    ('parcel','parcel')
 )  
 
 service_types=(
