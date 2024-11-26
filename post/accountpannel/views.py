@@ -275,9 +275,7 @@ class book_consignment(APIView):
             
             receiver_path_dic=get_path_from_pincode(data["receiver"]["pincode"],"end")
             receiver_path_dic=reverse_dict(receiver_path_dic)
-            print(receiver_path_dic,pathDic,sender_path_dic)
             merge_dic=merge_dicts(sender_path_dic,pathDic,receiver_path_dic)
-            print(merge_dic)
             
             if distance==float('inf'):
                 return Response({"error": "No path found between source and destination"}, status=status.HTTP_400_BAD_REQUEST)

@@ -231,7 +231,6 @@ def get_path_from_pincode(pin, process):
 
         pins = pincode.objects.get(pincode=pin)
         spos = SPO.objects.filter(pincode=pins).first()
-        print(spos)
         route[f'spo_{suffix}'] = spos.spo_id
 
         hpos = HPO.objects.get(spo=spos)

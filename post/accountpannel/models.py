@@ -212,11 +212,10 @@ class consignment_qr(models.Model):
     barcode_url=models.URLField()
     qr_url=models.URLField()
     created_date=models.DateTimeField(auto_now_add=True)
-    created_by=models.CharField(max_length=50)
     created_by_id=models.CharField(max_length=50)
     
     def __str__(self):
-        return f"{self.consignment_id} - {self.created_by}"
+        return f"{self.consignment_id} - {self.created_by_id}"
     
 office_types=(
     ('spo','spo'),

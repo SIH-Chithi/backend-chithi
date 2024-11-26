@@ -36,8 +36,7 @@ def decode_token_employee(token):
             settings.SIMPLE_JWT['SIGNING_KEY'],
             algorithms=['HS256'],
             options={"verify_exp": True}
-        )
-        
+        )        
         # Extract required fields from the token
         Employee_id = decodetoken.get('Employee_id')
         Employee_type = decodetoken.get('Employee_type')
@@ -68,6 +67,7 @@ def decode_token_employee(token):
 def token_process_employee(request):
     try:
         token = request.headers['Authorization']
+        token=token.split(" ")[1]
         employee, employee_type, Employee_id = decode_token_employee(token)
         return employee, employee_type, Employee_id
     except KeyError:
@@ -95,7 +95,7 @@ def employee_required(*allowed_role):
             try:
             
                 decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-                employee_id = decoded_token.get('employee_id')  
+                employee_id = decoded_token.get('Employee_id')  
 
                 try:
                     employee = Employee.objects.get(Employee_id=employee_id)
