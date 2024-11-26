@@ -83,7 +83,7 @@ class SPO(models.Model):
     region_name=models.CharField(max_length=50)
     
     def __str__(self):
-        return f"{self.spo_id} - {self.office_name}"
+        return f"{self.spo_id} -{self.pincode} -{self.office_name}"
     
 class HPO(models.Model):
     hpo_id = models.AutoField(primary_key=True)
@@ -287,3 +287,13 @@ class Employee(models.Model):
     
     def __str__(self):
         return f"{self.Employee_id} - {self.first_name} {self.last_name}"
+    
+    
+class consignment_route(models.Model):
+    consignment_id=models.OneToOneField('consignment', on_delete=models.CASCADE)
+    route=models.JSONField(default=dict)
+    pointer=models.CharField(max_length=50)
+    created_at=models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.consignment_id} - {self.pointer}"
