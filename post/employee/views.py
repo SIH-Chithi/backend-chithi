@@ -388,3 +388,52 @@ class get_containers(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+#relating consignments to container
+
+class relate_consignment_container(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            data=request.data
+            consignment_id=data['consignment_id']
+            container_id=data['container_id']
+            
+            consignment_obj=consignment.objects.get(consignment_id=consignment_id)
+            container_obj=container.objects.get(container_id=container_id)
+
+            
+            if container_obj.consignments.filter(consignment_id=consignment_id):
+                return Response({"message": "consignment already related to container"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if container_obj.consignments.count()==0:
+                consignment_route_obj=consignment_route.objects.get(consignment_id=consignment_obj)
+                point=consignment_route_obj.pointer
+                Route=consignment_route_obj.get_route()
+                office_name,office_id=next_destination(Route,point)
+                container_obj.going_to=f"{office_id}_{office_name}"
+                container_obj.save()
+                
+            container_obj.consignments.add(consignment_obj)
+            container_obj.save()    
+            
+            consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_in")
+            
+            return Response({"message": "consignment related to container successfully"}, status=status.HTTP_200_OK)
+        
+        except consignment.DoesNotExist:
+            return Response({"error": "Consignment not found"},status=status.HTTP_404_NOT_FOUND)
+            
+        except container.DoesNotExist:
+            return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
+            
+        except consignment_route.DoesNotExist:
+            return Response({"error": "Consignment route not found"},status=status.HTTP_404_NOT_FOUND)
+            
+        except Exception as e:
+            return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)

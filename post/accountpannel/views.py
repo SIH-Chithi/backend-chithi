@@ -276,14 +276,14 @@ class book_consignment(APIView):
             receiver_path_dic=get_path_from_pincode(data["receiver"]["pincode"],"end")
             receiver_path_dic=reverse_dict(receiver_path_dic)
             merge_dic=merge_dicts(sender_path_dic,pathDic,receiver_path_dic)
-            
             if distance==float('inf'):
                 return Response({"error": "No path found between source and destination"}, status=status.HTTP_400_BAD_REQUEST)
             
             if consignment_route.objects.filter(consignment_id=consignment_obj):
                 return Response({"message": "Consignment already booked"}, status=status.HTTP_400_BAD_REQUEST)
             
-            obj=consignment_route.objects.create(consignment_id=consignment_obj,route=merge_dic,pointer="spo_start")
+            obj=consignment_route.objects.create(consignment_id=consignment_obj,pointer="spo_start")
+            obj.save_route(merge_dic)
             obj.save()
             
             

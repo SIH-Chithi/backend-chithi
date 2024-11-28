@@ -11,5 +11,6 @@ urlpatterns = [
     path('create_container/', create_container.as_view(), name='create_container'),
     path('get_employee_details/', employee_details.as_view(), name='get_employee_details'),
     path('get_containers/', get_containers.as_view(), name='get_containers'),
+    path('relate_consignment_container/', relate_consignment_container.as_view(), name='relate_consignment_container'),
 ]
 

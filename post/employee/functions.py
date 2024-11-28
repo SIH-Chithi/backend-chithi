@@ -117,4 +117,38 @@ def employee_required(*allowed_role):
         
         return wrapper
     return decorator
+
+
+def next_destination(route, point):
+    if not route:
+        raise Exception("Route is empty")
     
+    try:
+        keys = list(route.keys())
+        index = keys.index(point)
+        
+        if index + 1 < len(keys):
+            next_key = keys[index + 1]
+            next_value = route[next_key]
+        else:
+            raise Exception("No next destination available")
+        
+        
+        office_type = next_key[:3]  
+        office_mapping = {
+            "spo": SPO.objects.get,
+            "hpo": HPO.objects.get,
+            "ich": ICH.objects.get,
+            "nsh": NSH.objects.get,
+        }
+        
+        if office_type in office_mapping:
+            office = office_mapping[office_type](**{f"{office_type}_id": next_value})
+            return office.office_name, next_value
+        else:
+            raise Exception("Invalid Office Type")
+    
+    except ValueError:
+        raise Exception(f"Point '{point}' not found in route")
+    except Exception as e:
+        raise Exception(str(e))
