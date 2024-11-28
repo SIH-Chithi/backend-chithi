@@ -20,4 +20,5 @@ urlpatterns = [
     path('getconsignmentdetails/', get_consignment_details.as_view(), name='getconsignmentdetails'),
     path('registercomplaint/', register_complain.as_view(), name='registercomplaint'),
     path('getcomplaintlist/', get_complains.as_view(), name='getcomplaintlist'),
+    path('getroute/', route.as_view(), name='getroute'),
 ]

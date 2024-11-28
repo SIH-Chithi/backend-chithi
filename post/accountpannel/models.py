@@ -83,7 +83,7 @@ class SPO(models.Model):
     region_name=models.CharField(max_length=50)
     
     def __str__(self):
-        return f"{self.spo_id} - {self.office_name}"
+        return f"{self.spo_id} -{self.pincode} -{self.office_name}"
     
 class HPO(models.Model):
     hpo_id = models.AutoField(primary_key=True)
@@ -212,11 +212,10 @@ class consignment_qr(models.Model):
     barcode_url=models.URLField()
     qr_url=models.URLField()
     created_date=models.DateTimeField(auto_now_add=True)
-    created_by=models.CharField(max_length=50)
     created_by_id=models.CharField(max_length=50)
     
     def __str__(self):
-        return f"{self.consignment_id} - {self.created_by}"
+        return f"{self.consignment_id} - {self.created_by_id}"
     
 office_types=(
     ('spo','spo'),
@@ -287,3 +286,29 @@ class Employee(models.Model):
     
     def __str__(self):
         return f"{self.Employee_id} - {self.first_name} {self.last_name}"
+    
+    
+class consignment_route(models.Model):
+    consignment_id=models.OneToOneField('consignment', on_delete=models.CASCADE)
+    route=models.JSONField(default=dict)
+    pointer=models.CharField(max_length=50)
+    created_at=models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.consignment_id} - {self.pointer}"
+    
+
+class container(models.Model):
+    container_id=models.AutoField(primary_key=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    created_by=models.CharField(max_length=50)
+    created_office_type=models.CharField(max_length=50,choices=office_types)
+    created_office_id=models.IntegerField()
+    going_to=models.CharField(max_length=100,blank=True,null=True)
+    
+    consignments = models.ManyToManyField('consignment', related_name='containers')
+    
+    
+    def __str__(self):
+        return f"{self.container_id}-{self.going_to}"
+    

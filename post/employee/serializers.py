@@ -34,11 +34,47 @@ class employee_token(serializers.Serializer):
             refresh["Employee_type"] = employee.type
 
             return {
-                "refresh": str(refresh),
-                "access": str(refresh.access_token),
+                "access": str(refresh),
+                "refresh": str(refresh.access_token),
                 "Employee_id": employee.Employee_id,
                 "type": employee.type,
             }
         except Employee.DoesNotExist:
             raise serializers.ValidationError("Employee does not exist")
+        
+class consignment_sender(serializers.ModelSerializer):
+    class Meta:
+        model = senders_details
+        fields='__all__'
             
+class consignment_receiver(serializers.ModelSerializer):
+    class Meta:
+        model = receiver_details
+        fields='__all__'
+        
+class consignment_parcel(serializers.ModelSerializer):
+    class Meta:
+        model = parcel
+        fields='__all__'        
+    
+class consignment_pickup_details(serializers.ModelSerializer):
+    class Meta:
+        model = consignment_pickup
+        fields='__all__'               
+        
+class employee_details_serializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employee
+        fields = ['Employee_id', 'first_name', 'last_name',   'type', 'address', 'pincode', 'city_district', 'state','office_id']            
+
+
+class consignment_serializer(serializers.ModelSerializer):
+    class Meta:
+        model = consignment
+        fields = ['consignment_id', 'type','service']
+        
+class container_serializer(serializers.ModelSerializer):
+    consignments = consignment_serializer(many=True, read_only=True)
+    class Meta:
+        model = container
+        fields = ['container_id','created_at','going_to','consignments']

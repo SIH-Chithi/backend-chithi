@@ -12,6 +12,10 @@ import pandas as pd
 import csv
 from collections import defaultdict
 
+import psycopg2
+from .routesss import create_graph_from_db, dijkstra    
+db_config = settings.DATABASES["default"]
+
 
 # Customer login : send otp to phone number
 class customerlogin(APIView):
@@ -259,6 +263,30 @@ class book_consignment(APIView):
                     pickup_time=data["pickup"]["pickup_time"],
                     pickup_amount=data["pickup"]["pickup_amount"]
                 )    
+            #getting nsh from pincode    
+            source_nsh=get_nsh_from_pincode(data["sender"]["pincode"])
+            destination_nsh=get_nsh_from_pincode(data["receiver"]["pincode"])
+            
+            #getting path from nsh
+            sender_path_dic=get_path_from_pincode(data["sender"]["pincode"],"start")
+            
+            graph=create_graph_from_db(db_config,destination_nsh)
+            distance, path, pathDic=dijkstra(graph, source_nsh, destination_nsh)
+            
+            receiver_path_dic=get_path_from_pincode(data["receiver"]["pincode"],"end")
+            receiver_path_dic=reverse_dict(receiver_path_dic)
+            merge_dic=merge_dicts(sender_path_dic,pathDic,receiver_path_dic)
+            
+            if distance==float('inf'):
+                return Response({"error": "No path found between source and destination"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if consignment_route.objects.filter(consignment_id=consignment_obj):
+                return Response({"message": "Consignment already booked"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            obj=consignment_route.objects.create(consignment_id=consignment_obj,route=merge_dic,pointer="spo_start")
+            obj.save()
+            
+            
                 
             return Response({"message": "Consignment booked successfully",
                         "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)   
@@ -529,3 +557,20 @@ def import_hpo_csv_with_path(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+    
+
+class route(APIView):
+    def post(self,request):
+
+            data=request.data
+            source=data["source"]
+            destination=data["destination"]
+            if not source or not destination:
+                return Response({"fields": "Source and destination are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            graph=create_graph_from_db(db_config,destination)
+            distance, path, pathDic=dijkstra(graph, source, destination)
+            if distance==float('inf'):
+                return Response({"error": "No path found between source and destination"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            return Response({"distance": distance, "path": path, "pathDic": pathDic}, status=status.HTTP_200_OK)    

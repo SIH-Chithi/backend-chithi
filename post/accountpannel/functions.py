@@ -218,7 +218,7 @@ def generate_qr(payload):
     }
 
 #return NSH from pincode            
-def get_nsh_from_pincode(pin, process):
+def get_path_from_pincode(pin, process):
     try:
         if not pin:
             return Response({"pincode": "Pincode is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -230,7 +230,7 @@ def get_nsh_from_pincode(pin, process):
         suffix = process  # 'start' or 'end'
 
         pins = pincode.objects.get(pincode=pin)
-        spos = SPO.objects.get(pincode=pins)
+        spos = SPO.objects.filter(pincode=pins).first()
         route[f'spo_{suffix}'] = spos.spo_id
 
         hpos = HPO.objects.get(spo=spos)
@@ -242,9 +242,33 @@ def get_nsh_from_pincode(pin, process):
         nsh = NSH.objects.get(ich=ichs)
         route[f'nsh_{suffix}'] = nsh.nsh_id
 
-        return JsonResponse({"data": route}, status=status.HTTP_200_OK)
+        return route
     except Exception as e:
-        return JsonResponse({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
+        return e
+    
+def get_nsh_from_pincode(pin):
+    try:
+        if not pin:
+            raise ValueError("Pincode is required")
+
+        pins = pincode.objects.get(pincode=pin)
+        spos = SPO.objects.filter(pincode=pins).first()
+        hpos = HPO.objects.get(spo=spos)
+        ichs = ICH.objects.get(hpo=hpos)
+        nsh = NSH.objects.get(ich=ichs)
+
+        return nsh.nsh_id        
+    
+    except Exception as e:
+        raise ValueError(str(e))
+
+    
+ 
+def reverse_dict(dictionary):
+    return dict(reversed(list(dictionary.items())))
+
+def merge_dicts(dict1, dict2, dict3):
+    return dict1 | dict2 | dict3
     
 #calculate postage
 
