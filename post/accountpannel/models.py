@@ -5,6 +5,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from datetime import timedelta , datetime
 from django.contrib.auth.hashers import make_password,check_password
+from collections import OrderedDict
+import json
 
 # Create your models here
 class UserManager(BaseUserManager):
@@ -290,9 +292,17 @@ class Employee(models.Model):
     
 class consignment_route(models.Model):
     consignment_id=models.OneToOneField('consignment', on_delete=models.CASCADE)
-    route=models.JSONField(default=dict)
+    route=models.TextField(blank=True,null=True)
     pointer=models.CharField(max_length=50)
     created_at=models.DateTimeField(auto_now_add=True)
+    
+    def save_route(self,route):
+        ordered_route = OrderedDict(route)
+        self.route = json.dumps(ordered_route)
+        self.save()
+    
+    def get_route(self):
+        return json.loads(self.route, object_pairs_hook=OrderedDict)   
     
     def __str__(self):
         return f"{self.consignment_id} - {self.pointer}"
@@ -312,3 +322,13 @@ class container(models.Model):
     def __str__(self):
         return f"{self.container_id}-{self.going_to}"
     
+
+class container_journey(models.Model):
+    container_id=models.ForeignKey('container', on_delete=models.CASCADE)
+    created_at=models.CharField(max_length=50,choices=office_types)  
+    created_place_id=models.IntegerField()
+    date_time=models.DateTimeField(auto_now_add=True)
+    process=models.CharField(max_length=10,choices=process)
+    
+    def __str__(self):
+        return f"{self.container_id} - {self.created_at}"
