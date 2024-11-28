@@ -296,3 +296,19 @@ class consignment_route(models.Model):
     
     def __str__(self):
         return f"{self.consignment_id} - {self.pointer}"
+    
+
+class container(models.Model):
+    container_id=models.AutoField(primary_key=True)
+    created_at=models.DateTimeField(auto_now_add=True)
+    created_by=models.CharField(max_length=50)
+    created_office_type=models.CharField(max_length=50,choices=office_types)
+    created_office_id=models.IntegerField()
+    going_to=models.CharField(max_length=100,blank=True,null=True)
+    
+    consignments = models.ManyToManyField('consignment', related_name='containers')
+    
+    
+    def __str__(self):
+        return f"{self.container_id}-{self.going_to}"
+    

@@ -237,7 +237,8 @@ class update_consignment_details(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
+
+#book consignment by spo      
 class book_consignment_spo(APIView):
     authentication_classes = []
     permission_classes = []
@@ -330,4 +331,60 @@ class book_consignment_spo(APIView):
             return Response({"message": "Consignment booked successfully",
                         "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)   
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)       
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+
+#create container
+class create_container(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:    
+            type=employee.type
+            office_id=employee.office_id
+            
+            
+            container_obj=container.objects.create(
+                created_by=Employee_id,
+                created_office_type=type,
+                created_office_id=office_id,
+                )
+            container_obj.save()
+            return Response({"message": "Container created successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+#get Employee details
+
+class employee_details(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            serializer=employee_details_serializer(employee)
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+#get containers of the office
+class get_containers(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            containers=container.objects.filter(created_office_id=employee.office_id)
+            serializer=container_serializer(containers, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
