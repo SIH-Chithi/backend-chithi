@@ -87,7 +87,6 @@ def dijkstra(graph, source, target):
                 for p in path:
                     pathDic[f"nsh{i}"] = p
                     i+=1
-                print(current_distance, path, pathDic)
                 return current_distance, path, pathDic
             if len(path) == 0 :
                     return float('inf'), [], {"error": "Empty path encountered"}  

@@ -12,5 +12,7 @@ urlpatterns = [
     path('get_employee_details/', employee_details.as_view(), name='get_employee_details'),
     path('get_containers/', get_containers.as_view(), name='get_containers'),
     path('relate_consignment_container/', relate_consignment_container.as_view(), name='relate_consignment_container'),
+    path('checkout_to_hpo/', checkout_to_hpo.as_view(), name='checkout_to_hpo'),
+    path('get_checkout_container/', get_container_checked_out.as_view(), name='get_checkout_container'),
 ]
 

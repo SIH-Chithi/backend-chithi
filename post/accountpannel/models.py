@@ -264,7 +264,7 @@ class complains(models.Model):
     def __str__(self):
         return f"{self.complain_id} - {self.consignment_id}"
 
-   
+
 class Employee(models.Model):
     Employee_id=models.CharField(max_length=50,primary_key=True)
     password=models.CharField(max_length=128)
