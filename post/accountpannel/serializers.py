@@ -89,6 +89,18 @@ class get_complains_serializer(serializers.ModelSerializer):
         model=complains
         fields=['complain_id','consignment_id','complain','status','created_on']
 
+class sender_details_serializer(serializers.ModelSerializer):
+    class Meta:
+        model=senders_details
+        fields='__all__'
+        
+class receiver_details_serializer(serializers.ModelSerializer):
+    class Meta:
+        model=receiver_details
+        fields='__all__' 
+        
+        
+               
 """ class employeetoken(TokenObtainPairSerializer):
     employee_id = serializers.CharField()
     password = serializers.CharField(write_only=True) 
