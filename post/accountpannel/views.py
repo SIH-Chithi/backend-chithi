@@ -369,6 +369,13 @@ class get_consignment_details(APIView):
                 
                 }
             
+            Senders_details=senders_details.objects.get(consignment_id=order)
+            Receiver_details=receiver_details.objects.get(consignment_id=order)
+            
+            Sender_serializer=sender_details_serializer(Senders_details)
+            Receiver_serializer=receiver_details_serializer(Receiver_details)
+            
+            
             journey=consignment_journey.objects.filter(consignment_id=consignment_id)
     
         
@@ -380,6 +387,8 @@ class get_consignment_details(APIView):
                 seria=None
             
             return JsonResponse({"order": serializer, 
+                                "sender": Sender_serializer.data,
+                                "receiver": Receiver_serializer.data,
                             "journey": seria}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
