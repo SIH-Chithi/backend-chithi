@@ -78,3 +78,11 @@ class container_serializer(serializers.ModelSerializer):
     class Meta:
         model = container
         fields = ['container_id','created_at','going_to','consignments']
+        
+class container_journey_serializer(serializers.ModelSerializer):
+    container=container_serializer(source='container_id')
+    class Meta:
+        model = container_journey
+        fields = ['container_id','created_at','process','container']   
+        
+        

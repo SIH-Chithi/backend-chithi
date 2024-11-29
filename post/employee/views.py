@@ -12,6 +12,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from .functions import *
 from .serializers import *
 from accountpannel.routesss import *
+from datetime import date
 
 db_config = settings.DATABASES["default"]
 class create_employee(APIView):
@@ -418,7 +419,7 @@ class relate_consignment_container(APIView):
                 office_name,office_id=next_destination(Route,point)
                 container_obj.going_to=f"{office_id}_{office_name}"
                 container_obj.save()
-                
+
             container_obj.consignments.add(consignment_obj)
             container_obj.save()    
             
@@ -437,3 +438,94 @@ class relate_consignment_container(APIView):
             
         except Exception as e:
             return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        
+#get details inside the container
+
+class get_details_container(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            data=request.data
+            container_id=data['container_id']
+            container_obj=container.objects.get(container_id=container_id)
+            serializer=container_serializer(container_obj)
+            return JsonResponse(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+#check out container from spo
+
+class checkout_to_hpo(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            data=request.data
+            container_id=data['container_id']
+            container_obj=container.objects.get(container_id=container_id)
+            consignments=container_obj.consignments.all()
+            for consignment_obj in consignments:
+                consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out")
+                
+            container_journey.objects.create(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out")
+            return Response({"message": "checked out successfully"}, status=status.HTTP_400_BAD_REQUEST)
+        except container.DoesNotExist:
+            return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+#get list of containers checked out today 
+from django.utils.timezone import now, make_aware
+from datetime import timedelta
+class get_container_checked_out(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            today=date.today()
+            today_start = now().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = today_start + timedelta(days=1)
+            
+            containers=container_journey.objects.filter(created_at=employee.type,created_place_id=employee.office_id,process="check_out",date_time__gte=today_start,
+                date_time__lt=today_end).select_related('container_id') 
+            serializer=container_journey_serializer(containers, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
+
+#check in to spo
+class checkin_to_spo(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            data=request.data
+            container_id=data['container_id']
+            container_obj=container.objects.get(container_id=container_id)
+            consignments=container_obj.consignments.all()
+            for consignment_obj in consignments:
+                consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out")
+                
+            container_journey.objects.create(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out")
+            return Response({"message": "checked out successfully"}, status=status.HTTP_400_BAD_REQUEST)
+        except container.DoesNotExist:
+            return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
