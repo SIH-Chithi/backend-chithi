@@ -365,9 +365,11 @@ class get_consignment_details(APIView):
                 "created_time":order.created_time,
                 "Amount":order.Amount,
                 "status":order.status,
-                "service":order.service
+                "service":order.service,
+                "delivery_status":order.is_out_for_delivery
                 
                 }
+            
             
             Senders_details=senders_details.objects.get(consignment_id=order)
             Receiver_details=receiver_details.objects.get(consignment_id=order)
@@ -385,10 +387,17 @@ class get_consignment_details(APIView):
                 
             else:
                 seria=None
+                
+            if consignment_reviews.objects.filter(consignment_id=consignment_id):
+                review=consignment_reviews.objects.get(consignment_id=consignment_id)
+                rating=review.rating
+            else:
+                rating=None  
             
             return JsonResponse({"order": serializer, 
                                 "sender": Sender_serializer.data,
                                 "receiver": Receiver_serializer.data,
+                                "rating": rating,
                             "journey": seria}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
@@ -569,6 +578,7 @@ def import_hpo_csv_with_path(request):
     
 
 class route(APIView):
+    
     def post(self,request):
 
             data=request.data
@@ -583,3 +593,61 @@ class route(APIView):
                 return Response({"error": "No path found between source and destination"}, status=status.HTTP_400_BAD_REQUEST)
             
             return Response({"distance": distance, "path": path, "pathDic": pathDic}, status=status.HTTP_200_OK)    
+        
+        
+#post consignment reviews
+class post_consignment_reviews(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            phone_number, user=token_process(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            data=request.data
+            if not data:
+                return Response({"data": "Data is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_id=data["consignment_id"]
+            rating=data["rating"]
+            
+            consignment_obj=consignment.objects.get(consignment_id=consignment_id)
+            
+            if not consignment_obj:
+                return Response({"consignment_id": "Consignment does not exist with this id"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if consignment_reviews.objects.filter(consignment_id=consignment_obj):
+                return Response({"message": "Review already posted for this consignment"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_reviews.objects.create(consignment_id=consignment_obj, rating=rating)
+            
+            return Response({"message": "Review posted successfully"}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+#get consignment reviews
+
+class get_consignment_reviews(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            phone_number, user=token_process(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            data=request.data
+            if not data:
+                return Response({"data": "Data is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_id=data["consignment_id"]
+            consignment_reviews_obj=consignment_reviews.objects.get(consignment_id=consignment_id)
+            rating=consignment_reviews_obj.rating
+            
+            return Response({"rating": rating}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

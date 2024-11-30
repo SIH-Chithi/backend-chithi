@@ -14,5 +14,10 @@ urlpatterns = [
     path('relate_consignment_container/', relate_consignment_container.as_view(), name='relate_consignment_container'),
     path('checkout_to_hpo/', checkout_to_hpo.as_view(), name='checkout_to_hpo'),
     path('get_checkout_container/', get_container_checked_out.as_view(), name='get_checkout_container'),
+    path('checkin_to_spo/', checkin_to_spo.as_view(), name='checkin_to_spo'),
+    path('get_checkin_container/', get_container_checked_in.as_view(), name='get_checkin_container'),
+    path('generate_container_qr/',generate_qr_container.as_view(),name='generate_container_qr'), 
+
 ]
+
 

@@ -205,6 +205,7 @@ class consignment(models.Model):
     is_payed=models.BooleanField(default=False)
     status=models.BooleanField(default=False)
     service=models.CharField(max_length=50,default='other',choices=service_types)
+    is_out_for_delivery=models.BooleanField(default=False)
     
     def __str__(self):
         return f"{self.consignment_id} - {self.type}"
@@ -260,6 +261,7 @@ class complains(models.Model):
     created_on=models.DateTimeField(auto_now_add=True)
     complain=models.TextField()
     status=models.BooleanField(default=False)
+    
     
     def __str__(self):
         return f"{self.complain_id} - {self.consignment_id}"
@@ -332,3 +334,20 @@ class container_journey(models.Model):
     
     def __str__(self):
         return f"{self.container_id} - {self.created_at}"
+    
+class container_qr(models.Model):
+    container_id = models.OneToOneField('container', on_delete=models.CASCADE)    
+    barcode_url=models.URLField()
+    qr_url=models.URLField()
+    created_date=models.DateTimeField(auto_now_add=True)
+    created_by_id=models.CharField(max_length=50)
+    
+    def __str__(self):
+        return f"{self.container_id} - {self.created_by_id}"
+        
+class consignment_reviews(models.Model):
+    consignment_id=models.OneToOneField('consignment', on_delete=models.CASCADE)        
+    rating=models.FloatField()
+    
+    def __str__(self):
+        return f"{self.consignment_id} - {self.rating}"

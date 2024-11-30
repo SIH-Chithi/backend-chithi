@@ -13,6 +13,7 @@ from .functions import *
 from .serializers import *
 from accountpannel.routesss import *
 from datetime import date
+import threading
 
 db_config = settings.DATABASES["default"]
 class create_employee(APIView):
@@ -472,6 +473,8 @@ class checkout_to_hpo(APIView):
             data=request.data
             container_id=data['container_id']
             container_obj=container.objects.get(container_id=container_id)
+            if container_journey.objects.filter(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out"):
+                return Response({"message": "Container already checked out"}, status=status.HTTP_400_BAD_REQUEST)
             consignments=container_obj.consignments.all()
             for consignment_obj in consignments:
                 consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out")
@@ -519,13 +522,67 @@ class checkin_to_spo(APIView):
             data=request.data
             container_id=data['container_id']
             container_obj=container.objects.get(container_id=container_id)
+            if container_journey.objects.filter(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_in"):
+                return Response({"message": "Container already checked in"}, status=status.HTTP_400_BAD_REQUEST)
             consignments=container_obj.consignments.all()
+            
             for consignment_obj in consignments:
-                consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out")
+                consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_in")   
                 
-            container_journey.objects.create(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out")
-            return Response({"message": "checked out successfully"}, status=status.HTTP_400_BAD_REQUEST)
+            container_journey.objects.create(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_in")
+            
+            threading.Thread(target=update_next_destination, args=(consignments,employee)).start()  #start thread to update next destination
+            
+            return Response({"message": "checked in successfully"}, status=status.HTTP_400_BAD_REQUEST)
         except container.DoesNotExist:
             return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+#get containers checked in today
+class get_container_checked_in(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            today=date.today()
+            today_start = now().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = today_start + timedelta(days=1)
+            
+            containers=container_journey.objects.filter(created_at=employee.type,created_place_id=employee.office_id,process="check_in",date_time__gte=today_start,
+                date_time__lt=today_end).select_related('container_id') 
+            serializer=container_journey_serializer(containers, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+
+class generate_qr_container(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id=token_process_employee(request)
+        except AuthenticationFailed as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        try:    
+            data=request.data
+            container_id=data['container_id']
+            if not container_id:
+                return Response({"consignment_id": "Consignment id is required"}, status=status.HTTP_400_BAD_REQUEST)        
+            
+            container_obj=container.objects.get(container_id=container_id)
+            if not container_obj:
+                return Response({"error": "Container does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            urls=generate_qr(str(container_id))
+            if urls:
+                container_qr.objects.create(container_id=container_obj, barcode_url=urls['barcode_url'], qr_url=urls['qr_code_url'],created_by_id=Employee_id)
+                return JsonResponse({"container_id":container_id,
+                                    "urls":urls}, status=status.HTTP_200_OK)
+            return Response({"error": "QR generation failed"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

@@ -73,16 +73,23 @@ class consignment_serializer(serializers.ModelSerializer):
         model = consignment
         fields = ['consignment_id', 'type','service']
         
+class container_qr_serializer(serializers.ModelSerializer):
+    class Meta:
+        model=container_qr
+        fields=['barcode_url','qr_url']
+        
+        
 class container_serializer(serializers.ModelSerializer):
     consignments = consignment_serializer(many=True, read_only=True)
+    qr = container_qr_serializer(source='container_qr', read_only=True)
+
     class Meta:
         model = container
-        fields = ['container_id','created_at','going_to','consignments']
+        fields = ['container_id','created_at','going_to','qr','consignments']
         
 class container_journey_serializer(serializers.ModelSerializer):
     container=container_serializer(source='container_id')
     class Meta:
         model = container_journey
-        fields = ['container_id','created_at','process','container']   
-        
-        
+        fields = ['container_id','created_at','process','container']
+
