@@ -21,4 +21,6 @@ urlpatterns = [
     path('registercomplaint/', register_complain.as_view(), name='registercomplaint'),
     path('getcomplaintlist/', get_complains.as_view(), name='getcomplaintlist'),
     path('getroute/', route.as_view(), name='getroute'),
+    path('postreview/', post_consignment_reviews.as_view(), name='postreview'),
+    path('getreview/', get_consignment_reviews.as_view(), name='getreview'),
 ]

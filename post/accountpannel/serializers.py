@@ -97,10 +97,11 @@ class sender_details_serializer(serializers.ModelSerializer):
 class receiver_details_serializer(serializers.ModelSerializer):
     class Meta:
         model=receiver_details
-        fields='__all__' 
+        fields='__all__'
         
         
-               
+        
+                
 """ class employeetoken(TokenObtainPairSerializer):
     employee_id = serializers.CharField()
     password = serializers.CharField(write_only=True) 
