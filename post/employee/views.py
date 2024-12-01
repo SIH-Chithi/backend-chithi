@@ -38,7 +38,22 @@ class create_employee(APIView):
         except Exception as e:
             return Response({"error":str(e)}, status=status.HTTP_400_BAD_REQUEST)    
 
+#get access token by refresh token
 
+class get_access_byrefresh(APIView):
+    def post(self,request):
+        try:
+            data=request.data
+            refresh=RefreshToken(data['refresh'])
+            if not refresh:
+                return Response({"error":"Invalid refresh token"}, status=status.HTTP_400_BAD_REQUEST)
+            access=str(refresh.access_token)
+            
+            return Response({"access":access}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error":str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
 #Login API for Employee: takes employee_id and password as input
 class employee_login(APIView):
     def post(self,request):
@@ -560,6 +575,8 @@ class get_container_checked_in(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
 
+
+#generate qr for container
 class generate_qr_container(APIView):
     authentication_classes = []
     permission_classes = []
@@ -586,3 +603,102 @@ class generate_qr_container(APIView):
             return Response({"error": "QR generation failed"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        
+# HPO START
+
+class book_consignment_hpo(APIView):
+    authentication_classes = []
+    permission_classes = []
+    
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:    
+            data=request.data
+            if not data:
+                return Response({"data": "Data is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if data["is_payed"]==False:
+                return Response({"message": "Payment is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user=User.objects.get(phone_number=data["sender"]["phone_number"])
+            if not user:
+                return Response({"error": "sender must be register first"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_obj=consignment.objects.create(
+                type=data["type"],
+                user=user,
+                created_place=f"{employee.office_id}-spo",
+                Amount=data["Amount"],
+                is_payed=data["is_payed"],
+                )
+            
+            senders_details.objects.create(
+                consignment_id=consignment_obj,
+                first_name=data["sender"]["first_name"],
+                last_name=data["sender"]["last_name"],
+                pincode=data["sender"]["pincode"],
+                address=data["sender"]["address"],
+                city_district=data["sender"]["city_district"],
+                state=data["sender"]["state"],
+                country=data["sender"]["country"],
+                phone_number=data["sender"]["phone_number"]
+            )
+            
+            receiver_details.objects.create(
+                consignment_id=consignment_obj,
+                first_name=data["receiver"]["first_name"],
+                last_name=data["receiver"]["last_name"],
+                pincode=data["receiver"]["pincode"],
+                address=data["receiver"]["address"],
+                city_district=data["receiver"]["city_district"],
+                state=data["receiver"]["state"],
+                country=data["receiver"]["country"],
+                phone_number=data["receiver"]["phone_number"]
+            )
+            
+            if data["type"]=="parcel":
+                if not data.get("parcel"):
+                    return Response({"parcel": "Parcel details are required"}, status=status.HTTP_400_BAD_REQUEST)
+                parcel.objects.create(
+                    consignment_id=consignment_obj,
+                    weight=data["parcel"]["weight"],
+                    length=data["parcel"]["length"],
+                    breadth=data["parcel"]["breadth"],
+                    height=data["parcel"]["height"],
+                    price=data["parcel"]["price"]
+                )
+            #getting nsh from pincode    
+            source_nsh=get_nsh_from_pincode(data["sender"]["pincode"])
+            destination_nsh=get_nsh_from_pincode(data["receiver"]["pincode"])
+            
+            #getting path from nsh
+            sender_path_dic=get_path_from_pincode(data["sender"]["pincode"],"start")
+            
+            graph=create_graph_from_db(db_config,destination_nsh)
+            distance, path, pathDic=dijkstra(graph, source_nsh, destination_nsh)
+            
+            receiver_path_dic=get_path_from_pincode(data["receiver"]["pincode"],"end")
+            receiver_path_dic=reverse_dict(receiver_path_dic)
+            merge_dic=merge_dicts(sender_path_dic,pathDic,receiver_path_dic)
+            
+            if distance==float('inf'):
+                return Response({"error": "No path found between source and destination"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if consignment_route.objects.filter(consignment_id=consignment_obj):
+                return Response({"message": "Consignment already booked"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            obj=consignment_route.objects.create(consignment_id=consignment_obj,route=merge_dic,pointer="hpo_start")
+            obj.save()
+            
+            
+                
+            return Response({"message": "Consignment booked successfully",
+                        "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)   
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+
