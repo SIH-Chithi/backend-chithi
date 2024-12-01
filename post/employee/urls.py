@@ -4,6 +4,7 @@ from .views import *
 urlpatterns = [
     path('create_employee/', create_employee.as_view(), name='create_employee'),
     path('employee_login/', employee_login.as_view(), name='employee_login'),
+    path('access_byrefresh/', get_access_byrefresh.as_view(), name='access_byrefresh'),
     path('get_consignment_details/', get_consignment_details.as_view(), name='get_consignment_details'),
     path("generate_qr/", generate_qr_view.as_view(), name="generate_qr"),
     path('update_consignment/', update_consignment_details.as_view(), name='update_consignment'),
@@ -16,7 +17,8 @@ urlpatterns = [
     path('get_checkout_container/', get_container_checked_out.as_view(), name='get_checkout_container'),
     path('checkin_to_spo/', checkin_to_spo.as_view(), name='checkin_to_spo'),
     path('get_checkin_container/', get_container_checked_in.as_view(), name='get_checkin_container'),
-    path('generate_container_qr/',generate_qr_container.as_view(),name='generate_container_qr'), 
+    path('generate_container_qr/',generate_qr_container.as_view(),name='generate_container_qr'),
+    path('book_consignment_hpo/', book_consignment_hpo.as_view(), name='book_consignment_hpo'),
 
 ]
 

@@ -35,7 +35,7 @@ class employee_token(serializers.Serializer):
 
             return {
                 "access": str(refresh),
-                "refresh": str(refresh.access_token),
+                "refresh": str(refresh),
                 "Employee_id": employee.Employee_id,
                 "type": employee.type,
             }
