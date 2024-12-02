@@ -442,7 +442,11 @@ class relate_consignment_container(APIView):
             
             consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_in")
             
-            return Response({"message": "consignment related to container successfully"}, status=status.HTTP_200_OK)
+            return Response({"message": "consignment related to container successfully",
+                            "consignment_id":consignment_id,
+                            "service":consignment_obj.service,
+                            "type":consignment_obj.type,
+                            "created_time":consignment_obj.created_date}, status=status.HTTP_200_OK)
         
         except consignment.DoesNotExist:
             return Response({"error": "Consignment not found"},status=status.HTTP_404_NOT_FOUND)
