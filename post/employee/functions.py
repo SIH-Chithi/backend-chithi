@@ -162,7 +162,6 @@ def update_next_destination(consignments,employee):
             consignment_route_obj=consignment_route.objects.get(consignment_id=consignment)
             route=consignment_route_obj.get_route()
             point=consignment_route_obj.pointer
-            print(route,point)
             if not route:
                 raise Exception("Route is empty")
 
@@ -172,7 +171,7 @@ def update_next_destination(consignments,employee):
             if index + 1 < len(keys):
                 next_key = keys[index + 1]
                 next_value = route[next_key]
-                print(next_key,next_value)
+                
             else:
                 raise Exception("No next destination available")
         
@@ -181,5 +180,33 @@ def update_next_destination(consignments,employee):
         return True
     except ValueError:
         raise Exception(f"Point '{point}' not found in route")
+    
+    
+def update_next(consignment,employee):
+    try:
+        consignment_route_obj=consignment_route.objects.get(consignment_id=consignment)
+        print(consignment_route_obj)
+        route=consignment_route_obj.get_route()
+        print(route)
+        point=consignment_route_obj.pointer
+        if not route:
+            raise Exception("Route is empty")
+
+        keys = list(route.keys())
+        index = keys.index(point)
         
+        if index + 1 < len(keys):
+            next_key = keys[index + 1]
+            next_value = route[next_key]
+
+        else:
+            raise Exception("No next destination available")
+        
+        consignment_route_obj.pointer=next_key
+        consignment_route_obj.save()
+        return True
+    except consignment_route.DoesNotExist:
+        raise Exception("Consignment not found")
+    except ValueError:
+        raise Exception(f"Point '{point}' not found in route")
         

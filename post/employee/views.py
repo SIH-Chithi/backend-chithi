@@ -370,7 +370,8 @@ class create_container(APIView):
                 created_office_id=office_id,
                 )
             container_obj.save()
-            return Response({"message": "Container created successfully"}, status=status.HTTP_200_OK)
+            return Response({"message": "Container created successfully",
+                            "container_id":container_obj.container_id}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -474,9 +475,9 @@ class get_details_container(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
-#check out container from spo
+#check out container 
 
-class checkout_to_hpo(APIView):
+class checkout(APIView):
     authentication_classes = []
     permission_classes = []
     def post(self,request):
@@ -525,7 +526,7 @@ class get_container_checked_out(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)        
 
 #check in to spo
-class checkin_to_spo(APIView):
+class checkin(APIView):
     authentication_classes = []
     permission_classes = []
     def post(self,request):
@@ -701,4 +702,106 @@ class book_consignment_hpo(APIView):
                         "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)   
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+        
+        
+        
+#Secondary sorting
+class secondary_sorting(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            data=request.data
+            consignment_id=data['consignment_id']
+            consignment_obj=consignment.objects.get(consignment_id=consignment_id)
+            if not consignment_obj:
+                return Response({"error": "Consignment not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_route_obj=consignment_route.objects.get(consignment_id=consignment_obj)
+            
+            if not consignment_route_obj:
+                return Response({"error": "Consignment route not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            route=consignment_route_obj.get_route()
+            point=consignment_route_obj.pointer
+            office_name,office_id=next_destination(route,point)
+            
+            return Response({"office_id":office_id,"office_name":office_name,"consignment_id":consignment_id}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
 
+#NSH :- National sorting hub
+
+class preliminary_sorting(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            data=request.data
+            consignment_id=data['consignment_id']
+            if not consignment_id:
+                return Response({"consignment_id": "Consignment id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if consignment_journey.objects.filter(consignment_id=consignment_id,created_at=employee.type,created_place_id=employee.office_id,process="check_in"):
+                return Response({"message": "Consignment already checked in"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_obj=consignment.objects.get(consignment_id=consignment_id)
+            
+            update_next(consignment_id,employee)
+            
+            consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_in")
+            
+            return Response({"service":consignment_obj.service,"consignment_id":consignment_id,"type":consignment_obj.type}, status=status.HTTP_200_OK)
+            
+        except consignment.DoesNotExist:
+            return Response({"error": "Consignment not found"},status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+# Check In to NSH
+
+class checkin_NSH(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            data=request.data
+            container_id=data['container_id']
+            
+            if not container_id:
+                return Response({"container_id": "Container id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            container_obj=container.objects.get(container_id=container_id)
+            if not container_obj:
+                return Response({"error": "Container not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if container_journey.objects.filter(container_id=container_id,created_at=employee.type,created_place_id=employee.office_id,process="check_in"):
+                return Response({"message": "Container already checked in"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            container_journey.objects.create(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_in")
+            
+            return Response({"message": "checked in successfully"}, status=status.HTTP_200_OK)
+        
+        except container.DoesNotExist:
+            return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
