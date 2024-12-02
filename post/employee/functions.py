@@ -185,9 +185,8 @@ def update_next_destination(consignments,employee):
 def update_next(consignment,employee):
     try:
         consignment_route_obj=consignment_route.objects.get(consignment_id=consignment)
-        print(consignment_route_obj)
         route=consignment_route_obj.get_route()
-        print(route)
+       
         point=consignment_route_obj.pointer
         if not route:
             raise Exception("Route is empty")
