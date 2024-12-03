@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'accountpannel',
     'import_export',
     'employee',
+    'dashboard',
 ]
 
 AUTH_USER_MODEL = 'accountpannel.User'
