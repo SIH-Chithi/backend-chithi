@@ -24,6 +24,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from jwt import ExpiredSignatureError, InvalidTokenError
 from django.core.exceptions import ObjectDoesNotExist
 from functools import wraps
+from django.db.models import F 
 
 
 
@@ -86,6 +87,7 @@ def employee_required(*allowed_role):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             # Extract token from the Authorization header
+            print(request.headers)
             auth_header = request.headers.get('Authorization')
             if not auth_header or not auth_header.startswith('Bearer '):
                 return JsonResponse({'error': 'Authorization token is missing or invalid.'}, status=401)
@@ -208,4 +210,24 @@ def update_next(consignment,employee):
         raise Exception("Consignment not found")
     except ValueError:
         raise Exception(f"Point '{point}' not found in route")
-        
+    
+    
+def update_checkin_count(nsh_obj,counting):
+    try:
+        if adjacent_nsh_data.objects.filter(nsh2=nsh_obj).exists():
+            data=adjacent_nsh_data.objects.filter(nsh2=nsh_obj)
+            for i in data:
+                i.traffic=i.traffic+counting  
+                i.save()                                  
+    except Exception as  e:
+        return Response({"error",str(e)},status=status.HTTP_400_BAD_REQUEST)
+    
+def update_checkout_count(nsh_obj,counting):
+    try:
+        if adjacent_nsh_data.objects.filter(nsh2=nsh_obj).exists():
+            data=adjacent_nsh_data.objects.filter(nsh2=nsh_obj)
+            for i in data:
+                i.traffic=i.traffic-counting  
+                i.save()                                  
+    except Exception as  e:
+        return Response({"error",str(e)},status=status.HTTP_400_BAD_REQUEST)

@@ -14,6 +14,7 @@ urlpatterns = [
     path('get_containers/', get_containers.as_view(), name='get_containers'),
     path('get_container_details/', get_details_container.as_view(), name='get_container_details'),
     path('relate_consignment_container/', relate_consignment_container.as_view(), name='relate_consignment_container'),
+    path('get_todays_container/', get_container_created_today.as_view(), name='get_todays_container'),
     path('checkout/', checkout.as_view(), name='checkout_to_hpo'),
     path('get_checkout_container/', get_container_checked_out.as_view(), name='get_checkout_container'),
     path('checkin/', checkin.as_view(), name='checkin_to_spo'),
@@ -25,6 +26,7 @@ urlpatterns = [
     #NSH
     path('preliminary_sort/', preliminary_sorting.as_view(), name='preliminary_sorting'),
     path('checkin_to_nsh/', checkin_NSH.as_view(), name='checkin_to_nsh'),
+    path('checkout_from_nsh/', checkout_NSH.as_view(), name='checkout_from_nsh'),
 
 ]
 

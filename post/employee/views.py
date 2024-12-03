@@ -159,6 +159,12 @@ class generate_qr_view(APIView):
             if not consignment_obj:
                 return Response({"error": "Consignment does not exist"}, status=status.HTTP_400_BAD_REQUEST)
             
+            if consignment_qr.objects.filter(consignment_id=consignment_obj):
+                consignment_qr_obj=consignment_qr.objects.get(consignment_id=consignment_obj)
+                return Response({"message": "QR already generated",
+                                "qr_url":consignment_qr_obj.qr_url,
+                                "barcode_url":consignment_qr_obj.barcode_url}, status=status.HTTP_400_BAD_REQUEST)
+                
             urls=generate_qr(str(consignment_id))
             if urls:
                 qr_obj=consignment_qr.objects.create(consignment_id=consignment_obj, barcode_url=urls['barcode_url'], qr_url=urls['qr_code_url'],created_by_id=Employee_id)
@@ -581,6 +587,27 @@ class get_container_checked_in(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
 
 
+#get list of container created today
+class get_container_created_today(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            today=date.today()
+            today_start = now().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = today_start + timedelta(days=1)
+            
+            containers=container.objects.filter(created_office_id=employee.office_id,created_at__gte=today_start,
+                created_at__lt=today_end)
+            serializer=container_serializer(containers, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST) 
+        
 #generate qr for container
 class generate_qr_container(APIView):
     authentication_classes = []
@@ -600,6 +627,12 @@ class generate_qr_container(APIView):
             if not container_obj:
                 return Response({"error": "Container does not exist"}, status=status.HTTP_400_BAD_REQUEST)
             
+            if container_qr.objects.filter(container_id=container_obj):
+                container_qr_obj=container_qr.objects.get(container_id=container_obj)
+                return Response({"message": "QR already generated",
+                                "qr_url":container_qr_obj.qr_url,
+                                "barcode_url":container_qr_obj.barcode_url}, status=status.HTTP_400_BAD_REQUEST)
+                
             urls=generate_qr(str(container_id))
             if urls:
                 container_qr.objects.create(container_id=container_obj, barcode_url=urls['barcode_url'], qr_url=urls['qr_code_url'],created_by_id=Employee_id)
@@ -782,6 +815,8 @@ class checkin_NSH(APIView):
     def post(self,request):
         try:
             employee, employee_type, Employee_id = token_process_employee(request)
+            if employee.type!="nsh":
+                return Response({"error": "Only NSH employee can check in"}, status=status.HTTP_400_BAD_REQUEST)
         except ValueError as e:
             return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -797,15 +832,56 @@ class checkin_NSH(APIView):
                 return Response({"error": "Container not found"}, status=status.HTTP_400_BAD_REQUEST)
             
             if container_journey.objects.filter(container_id=container_id,created_at=employee.type,created_place_id=employee.office_id,process="check_in"):
-                return Response({"message": "Container already checked in"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"message": "Container already checked in"}, status=status.HTTP_400_BAD_REQUEST) 
             
-            container_journey.objects.create(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_in")
+            consignments=container_obj.consignments.all()
+            counting=consignments.count()
+            nsh_obj=NSH.objects.get(nsh_id=employee.office_id)
+            threading.Thread(target=update_checkin_count, args=(nsh_obj,counting)).start()  #update checkin count
+            
+            container_journey.objects.create(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_in") 
             
             return Response({"message": "checked in successfully"}, status=status.HTTP_200_OK)
         
         except container.DoesNotExist:
             return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
         
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+# Check Out from NSH       
+class checkout_NSH(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+            if employee.type!="nsh":
+                return Response({"error": "Only NSH employee can check out"}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            data=request.data
+            container_id=data['container_id']
+            container_obj=container.objects.get(container_id=container_id)
+            
+            if container_journey.objects.filter(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out"):
+                return Response({"message": "Container already checked out"}, status=status.HTTP_400_BAD_REQUEST) 
+            
+            consignments=container_obj.consignments.all()
+            
+            counting=consignments.count()
+            
+            nsh_obj=NSH.objects.get(nsh_id=employee.office_id)
+            threading.Thread(target=update_checkout_count, args=(nsh_obj,counting)).start()  #update checkout count
+            
+            for consignment_obj in consignments:
+                consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out")
+                
+            container_journey.objects.create(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out") 
+            return Response({"message": "checked out successfully"}, status=status.HTTP_400_BAD_REQUEST)
+        except container.DoesNotExist:
+            return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
