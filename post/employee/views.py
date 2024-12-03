@@ -15,6 +15,11 @@ from accountpannel.routesss import *
 from datetime import date
 import threading
 
+
+from django.db.models.functions import TruncDay
+from django.db.models import Count
+from django.utils import timezone
+
 db_config = settings.DATABASES["default"]
 class create_employee(APIView):
     def post(self,request):
@@ -466,6 +471,53 @@ class relate_consignment_container(APIView):
         except Exception as e:
             return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
         
+#delete consignment from container        
+
+class delete_consignment_container(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            data=request.data
+            consignment_id=data['consignment_id']
+            container_id=data['container_id']
+            
+            
+            if not consignment.objects.filter(consignment_id=consignment_id):
+                return Response({"message": "consignment not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not container.objects.filter(container_id=container_id):
+                return Response({"message": "container not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_obj=consignment.objects.get(consignment_id=consignment_id)
+            container_obj=container.objects.get(container_id=container_id)
+            
+            if not container_obj.consignments.filter(consignment_id=consignment_id):
+                return Response({"message": "consignment not related to container"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            container_obj.consignments.remove(consignment_obj)
+            container_obj.save()
+            
+            return Response({"message": "consignment deleted from container successfully",
+                            "consignment_id":consignment_id,
+                            "service":consignment_obj.service,
+                            "type":consignment_obj.type,
+                            "created_time":consignment_obj.created_date}, status=status.HTTP_200_OK)
+        
+        except consignment.DoesNotExist:
+            return Response({"error": "Consignment not found"},status=status.HTTP_404_NOT_FOUND)
+            
+        except container.DoesNotExist:
+            return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
+            
+        except Exception as e:
+            return Response({"error": str(e)},status=status.HTTP_400_BAD_REQUEST)
+        
+        
 #get details inside the container
 
 class get_details_container(APIView):
@@ -884,4 +936,182 @@ class checkout_NSH(APIView):
             return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+#class get traffic report       
+
+
+class get_traffic_report(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            six_days=timezone.now()-timedelta(days=6)
+            
+            consignment_report=consignment_journey.objects.filter(created_at=employee.type,created_place_id=employee.office_id,date_time__gte=six_days,process="check_in").annotate(date=TruncDay('date_time')).values('date').annotate(count=Count('pk')).order_by('date')  #__gte stands for greater than equal to
+            
+            report = {entry['date'].strftime('%Y-%m-%d'): entry['count'] for entry in consignment_report}
+
+            return JsonResponse({"report":report}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
+class specific_report(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            six_days_ago = timezone.now() - timedelta(days=6)
+            
+            all_categories = [
+            "parcel speedpost",
+            "parcel other",
+            "document speedpost",
+            "document other"
+            ]
+            
+            report_data=consignment_journey.objects.filter(created_at=employee.type,created_place_id=employee.office_id,date_time__gte=six_days_ago,process="check_in"
+                                                        ).values(
+                                                            'date_time__date',  # Group by date
+                                                            'consignment_id__type',  # Category (document/parcel)
+                                                            'consignment_id__service'  # Subcategory (speedpost/other)
+                                                        ).annotate(
+                                                            count=Count('pk')  # Count the number of entries
+                                                        ).order_by('date_time__date')
+                                                        
+            categorized_report = {}
+            
+            #initializing the every category with zero
+            for i in range(6):  
+                date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+                categorized_report[date] = {category: 0 for category in all_categories}
+                
+                
+            for entry in report_data:
+                date = entry['date_time__date'].strftime('%Y-%m-%d')
+                category = f"{entry['consignment_id__type']} {entry['consignment_id__service']}"
+                
+                if date not in categorized_report:
+                    categorized_report[date] = {}
+                
+                categorized_report[date][category] = entry['count']
+                
+            return Response({"report": categorized_report}, status=status.HTTP_200_OK)    
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        
+        
+
+# POSTMAN
+
+class postman_consignment_in(APIView):
+    authentication_classes = []
+    permission_classes = []
+    
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+            
+            if employee.type!="postman":
+                return Response({"error": "Only postman can check in"}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            data=request.data
+            consignment_id=data['consignment_id']
+            
+            if not consignment_id:
+                return Response({"consignment_id": "Consignment id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not consignment.objects.filter(consignment_id=consignment_id):
+                return Response({"error": "Consignment not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_obj=consignment.objects.get(consignment_id=consignment_id)
+            
+            type=consignment_obj.type
+            service=consignment_obj.service
+            
+            consignment_receiver = receiver_details.objects.get(consignment_id=consignment_obj)
+            
+            receiver_address=f"{consignment_receiver.address},{consignment_receiver.city_district},{consignment_receiver.state},{consignment_receiver.country}"
+            receiver_pincode=consignment_receiver.pincode
+            receiver_phone_number=consignment_receiver.phone_number
+            
+            postman_consignments.objects.create(consignment_id=consignment_obj,postman_id=Employee_id)
+            
+            consignment_obj.is_out_for_delivery=True
+            
+            return Response({"message": "consignment checked out successfully",
+                            "consignment_id":consignment_id,
+                            "type":type,
+                            "service":service,
+                            "receiver_address":receiver_address,
+                            "receiver_pincode":receiver_pincode})
+        
+        except consignment.DoesNotExist:
+            return Response({"error": "Consignment not found"},status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+#get todays consignments for postman
+
+class get_postman_todays_consignments(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+            
+            if employee.type!="postman":
+                return Response({"error": "Only postman can check in"}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            today=date.today()
+            today_start = now().replace(hour=0, minute=0, second=0, microsecond=0)
+            today_end = today_start + timedelta(days=1)
+            
+            consignments=postman_consignments.objects.filter(postman_id=Employee_id,created_at__gte=today_start,
+                created_at__lt=today_end).select_related('consignment_id')
+            
+            Serializer=consignments_serializer_postman(consignments, many=True)
+            
+            
+            return Response(Serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+#get all the consignments of postman
+class get_postman_consignments(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+            
+            if employee.type!="postman":
+                return Response({"error": "Only postman can check in"}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            consignments=postman_consignments.objects.filter(postman_id=Employee_id).select_related('consignment_id')
+            serializers=consignments_serializer_postman(consignments, many=True)
+            
+            return Response(serializers.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+

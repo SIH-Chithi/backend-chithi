@@ -92,4 +92,19 @@ class container_journey_serializer(serializers.ModelSerializer):
     class Meta:
         model = container_journey
         fields = ['container_id','created_at','process','container']
+        
+
+class postman_consignment(serializers.ModelSerializer):
+    receiver=consignment_receiver(source='receiver_details_set', many=True, read_only=True)
+    
+    class Meta:
+        model = consignment
+        fields=['consignment_id','type','service','status','receiver']
+    
+        
+class consignments_serializer_postman(serializers.ModelSerializer):
+    consignments = postman_consignment(source='consignment_id', read_only=True)    
+    class Meta:
+        model = postman_consignments
+        fields = ['consignment_id','created_at','consignments']
 
