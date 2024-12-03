@@ -224,7 +224,8 @@ office_types=(
     ('spo','spo'),
     ('hpo','hpo'),
     ('ich','ich'),
-    ('nsh','nsh')
+    ('nsh','nsh'),
+    ('postman','postman')
 )  
 
 process=(
@@ -351,3 +352,20 @@ class consignment_reviews(models.Model):
     
     def __str__(self):
         return f"{self.consignment_id} - {self.rating}"
+    
+class postman_consignments(models.Model):
+    postman_id=models.CharField(max_length=50)
+    consignment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)
+    created_at=models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.postman_id} - {self.consignment_id}"
+    
+class otp_consignments(models.Model):
+    consignment_id=models.OneToOneField('consignment', on_delete=models.CASCADE)
+    otp=models.CharField(max_length=6)
+    created_at=models.DateTimeField(auto_now_add=True)
+    created_count=models.IntegerField(default=0)
+    
+    def __str__(self):
+        return f"{self.consignment_id} - {self.otp}"
