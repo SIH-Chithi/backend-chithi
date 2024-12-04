@@ -519,8 +519,61 @@ def token_process(request):
 
     except Exception as e:
         raise ValueError(str(e))
-
     
+
+#for postman   
+def send_delivery_otp(phone_number,consignment_obj):
+    try:
+        if not otp_consignments.objects.filter(consignment_id=consignment_obj).exists():
+            obj=otp_consignments.objects.create(consignment_id=consignment_obj)
+            obj.save()
+        else: 
+            obj=otp_consignments.objects.get(consignment_id=consignment_obj)
+            if obj.created_count>=3:
+                raise ValueError("You have reached the maximum limit of otp generation")
+            
+        otp=generate_otp()
+        message=f"Your otp code for the consignment {consignment_obj.consignment_id} is {otp}"
+        payload={
+            'from':"Vonage APIs",
+            "to":int(str(91)+str(phone_number)),
+            'text':message,
+            'api_key':settings.VONAGE_API_KEY,
+            'api_secret':settings.VONAGE_API_SECRET
+        }
+        url="https://rest.nexmo.com/sms/json"
+        response = sendsms(payload,url) 
+        if response==True:  
+            obj.otp=otp
+            obj.otp_expiry=timezone.now()+timedelta(minutes=10)
+            obj.created_count=obj.created_count+1
+            obj.save()
+            threading.Timer(50000,delete_delivery_otp,args=[consignment_obj]).start()
+            return True
+        return False
+    except ValueError as e:
+        raise ValueError(str(e))
+
+
+def verify_del_otp(otp,consignment_obj):
+    try:
+        obj=otp_consignments.objects.get(consignment_id=consignment_obj)
+        if not obj:
+            raise ValueError("No otp found")
+        if not obj:
+            return False
+        if obj.otp==otp and obj.otp_expiry>timezone.now():
+            obj.delete()
+            return True
+    except otp_consignments.DoesNotExist:
+        return False
+    
+def delete_delivery_otp(consignment_obj):
+    try:
+        obj=otp_consignments.objects.get(consignment=consignment_obj)
+        obj.delete()
+    except otp_consignments.DoesNotExist:
+        pass    
 
 
 

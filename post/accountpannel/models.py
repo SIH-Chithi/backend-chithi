@@ -363,8 +363,9 @@ class postman_consignments(models.Model):
     
 class otp_consignments(models.Model):
     consignment_id=models.OneToOneField('consignment', on_delete=models.CASCADE)
-    otp=models.CharField(max_length=6)
+    otp=models.CharField(max_length=6,null=True,blank=True)
     created_at=models.DateTimeField(auto_now_add=True)
+    otp_expiry = models.DateTimeField(blank=True, null=True)
     created_count=models.IntegerField(default=0)
     
     def __str__(self):
