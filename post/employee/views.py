@@ -558,7 +558,7 @@ class checkout(APIView):
                 consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out")
                 
             container_journey.objects.create(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out")
-            return Response({"message": "checked out successfully"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "checked out successfully"}, status=status.HTTP_200_OK)
         except container.DoesNotExist:
             return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
@@ -611,7 +611,7 @@ class checkin(APIView):
             
             threading.Thread(target=update_next_destination, args=(consignments,employee)).start()  #start thread to update next destination
             
-            return Response({"message": "checked in successfully"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "checked in successfully"}, status=status.HTTP_200_OK)
         except container.DoesNotExist:
             return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
@@ -931,7 +931,7 @@ class checkout_NSH(APIView):
                 consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out")
                 
             container_journey.objects.create(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_out") 
-            return Response({"message": "checked out successfully"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "checked out successfully"}, status=status.HTTP_200_OK)
         except container.DoesNotExist:
             return Response({"error": "Container not found"},status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
