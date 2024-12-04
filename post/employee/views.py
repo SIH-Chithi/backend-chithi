@@ -1115,3 +1115,151 @@ class get_postman_consignments(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+#get consignment by id
+class get_consignment_by_id(APIView):
+    authentication_classes = []
+    permission_classes = []
+    
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+            
+            if employee.type!="postman":
+                return Response({"error": "Only postman can check in"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        
+        try:
+            data=request.data 
+            consignment_id=data['consignment_id']
+            
+            if not consignment_id:
+                return Response({"consignment_id": "Consignment id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_obj=postman_consignments.objects.get(consignment_id=consignment_id,postman_id=Employee_id)
+            
+            serializer=consignments_serializer_postman(consignment_obj)
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+#get old consignments of postman
+
+class get_old_consignments_postman(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+            
+            if employee.type!="postman":
+                return Response({"error": "Only postman can check in"}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            start_of_today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            consignments=postman_consignments.objects.filter(postman_id=Employee_id,created_at__lt=start_of_today).select_related('consignment_id')
+
+            
+            serializer = consignments_serializer_postman(consignments, many=True)
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+# scan consignment for delivery 
+
+class scan_consignment(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+            
+            if employee.type!="postman":
+                return Response({"error": "Only postman can check in"}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            data=request.data 
+            consignment_id=data['consignment_id']
+            if not consignment_id:
+                return Response({"consignment_id": "Consignment id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not consignment.objects.filter(consignment_id=consignment_id):
+                return Response({"error": "Consignment not found"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            
+            if not postman_consignments.objects.filter(consignment_id=consignment_id,postman_id=Employee_id):
+                return Response({"error": "Consignment not assigned to postman"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_obj = consignment.objects.get(consignment_id=consignment_id)
+            
+            receiver_details_obj = receiver_details.objects.get(consignment_id=consignment_obj)
+            
+            phone_number=receiver_details_obj.phone_number
+            
+            send_delivery_otp(phone_number,consignment_obj)
+            
+            return Response({"message": "Consignment scanned successfully"},status=status.HTTP_200_OK)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+#verify otp for delivery        
+class verify_delivery_otp(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+            
+            if employee.type!="postman":
+                return Response({"error": "Only postman can check in"}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            data=request.data 
+            consignment_id=data['consignment_id']
+            otp=data['otp']
+            
+            if not consignment_id:
+                return Response({"consignment_id": "Consignment id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not otp:
+                return Response({"otp": "OTP is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not consignment.objects.filter(consignment_id=consignment_id):
+                return Response({"error": "Consignment not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
+            if not postman_consignments.objects.filter(consignment_id=consignment_id,postman_id=Employee_id):
+                return Response({"error": "Consignment not assigned to postman"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
+            
+            consignment_obj = consignment.objects.get(consignment_id=consignment_id)
+            
+            if consignment_obj.status:
+                return Response({"message": "Consignment already delivered"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if otp_consignments.objects.filter(consignment_id=consignment_obj):
+                return Response({"message": "No otp"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if verify_del_otp(otp,consignment_obj):
+                consignment_obj.status=True
+                consignment_obj.save()
+                
+                return Response({"message": "Consignment delivered successfully"},status=status.HTTP_200_OK)
+            return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
