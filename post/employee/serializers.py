@@ -3,6 +3,7 @@ from rest_framework import serializers
 from accountpannel.models import User, customer
 from accountpannel.functions import *
 from rest_framework_simplejwt.tokens import RefreshToken
+from accountpannel.serializers import *
 
 class employeeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -66,7 +67,18 @@ class employee_details_serializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = ['Employee_id', 'first_name', 'last_name',   'type', 'address', 'pincode', 'city_district', 'state','office_id']            
+        
 
+class consignment_details_serializer(serializers.ModelSerializer):        
+    sender=consignment_sender(source='sender_details_set', many=True, read_only=True)
+    receiver=consignment_receiver(source='receiver_details_set', many=True, read_only=True)
+    parcel=consignment_parcel(source='parcel_details_set', many=True, read_only=True)
+    pickup=consignment_pickup_details(source='consignment_pickup_set', many=True, read_only=True)
+    journey = get_consignment_journey(source='consignment_journey_set', many=True, read_only=True)
+    
+    class Meta:
+        model = consignment
+        fields = ['consignment_id','type','service','status','sender','receiver','parcel','pickup','journey']
 
 class consignment_serializer(serializers.ModelSerializer):
     class Meta:
@@ -107,4 +119,63 @@ class consignments_serializer_postman(serializers.ModelSerializer):
     class Meta:
         model = postman_consignments
         fields = ['consignment_id','created_at','consignments']
+        
 
+        
+class complain_journey_serializer(serializers.ModelSerializer):
+    transferred_office_name = serializers.SerializerMethodField()
+    class Meta:
+        model = complain_journey
+        fields = ['transferred_office_type','transferred_office_id','transferred_office_name','transferred_at','comments']        
+        
+    
+    def get_transferred_office_name(self, obj):
+        type=obj.transferred_office_type
+        id=obj.transferred_office_id
+        
+        if type == "nsh":
+            return NSH.objects.get(nsh_id=id).office_name
+        elif type == "ich":
+            return ICH.objects.get(ich_id=id).office_name
+        elif type == "hpo":
+            return HPO.objects.get(hpo_id=id).office_name
+        elif type == "spo":
+            return SPO.objects.get(spo_id=id).office_name
+        
+        else:
+            return None
+        
+class complain_serializer(serializers.ModelSerializer):
+    consignment_details=consignment_details_serializer(source='consignment_id')
+    nsh_office_name = serializers.SerializerMethodField()
+    current_office_name = serializers.SerializerMethodField()
+    journey = complain_journey_serializer(source='complain_journey_set', many=True, read_only=True)
+    class Meta:
+        model = complains
+        fields = ['complain_id','consignment_id','consignment_details','created_on','complain','status','nsh_office','nsh_office_name','current_office_type','current_office_id','current_office_name','journey'] 
+        
+    def get_nsh_office_name(self, obj):
+        id=obj.nsh_office    
+        
+        return NSH.objects.get(nsh_id=id).office_name
+    
+    def get_current_office_name(self, obj):
+        type=obj.current_office_type
+        id=obj.current_office_id
+        
+        if type == "nsh":
+            return NSH.objects.get(nsh_id=id).office_name
+        elif type == "ich":
+            return ICH.objects.get(ich_id=id).office_name
+        elif type == "hpo":
+            return HPO.objects.get(hpo_id=id).office_name
+        elif type == "spo":
+            return SPO.objects.get(spo_id=id).office_name
+        
+        else:
+            return None
+        
+class list_complains_serializer(serializers.ModelSerializer):
+    class Meta:
+        model = complains
+        fields = ['complain_id','consignment_id','created_on','complain','status']

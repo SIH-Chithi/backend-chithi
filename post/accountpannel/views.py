@@ -430,6 +430,8 @@ class register_complain(APIView):
             
             complain_obj=complains.objects.create(user=user,complain=complain, consignment_id=consignment_obj)
             
+            start_complain_journey(consignment_obj, complain_obj)
+            
             return  Response({"message": "Complain registered successfully",
                             "complain_id":complain_obj.complain_id}, status=status.HTTP_200_OK)
         except Exception as e :
