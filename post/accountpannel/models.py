@@ -254,18 +254,36 @@ class adjacent_nsh_data(models.Model):
     def __str__(self):
         return f"{self.nsh1}-{self.nsh2}"
     
-    
+
+status=(
+    ('pending','pending'),
+    ('transferred','transferred'),
+    ('resolved','resolved')
+)  
 class complains(models.Model):
     complain_id=models.AutoField(primary_key=True)
     consignment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)    
     user=models.ForeignKey(User,on_delete=models.CASCADE)
     created_on=models.DateTimeField(auto_now_add=True)
     complain=models.TextField()
-    status=models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=status, default='pending')
+    nsh_office=models.IntegerField(blank=True,null=True)
+    current_office_type=models.CharField(max_length=50,choices=office_types,blank=True,null=True)
+    current_office_id=models.IntegerField(blank=True,null=True)
     
     
     def __str__(self):
         return f"{self.complain_id} - {self.consignment_id}"
+    
+class complain_journey(models.Model):
+    complain_id=models.ForeignKey('complains', on_delete=models.CASCADE)
+    transferred_office_type = models.CharField(max_length=50,choices=office_types)
+    transferred_office_id=models.IntegerField()
+    transferred_at=models.DateTimeField(auto_now_add=True,blank=True,null=True)
+    comments=models.TextField()
+    
+    def __str__(self):
+        return f"{self.complain_id} - {self.transferred_office_type}"
 
 
 class Employee(models.Model):
@@ -370,3 +388,5 @@ class otp_consignments(models.Model):
     
     def __str__(self):
         return f"{self.consignment_id} - {self.otp}"
+
+
