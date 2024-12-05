@@ -41,6 +41,11 @@ urlpatterns = [
     path('get_old_consignments/', get_old_consignments_postman.as_view(), name='get_old_consignments'),
     path('scan_consignment/', scan_consignment.as_view(), name='scan_consignment'),
     path('verify_delivery_otp/', verify_delivery_otp.as_view(), name='verify_delivery_otp'),
+    
+    #complains
+    path('get_complains/', get_complains.as_view(), name='get_complains'),
+    path('get_complain_details/',get_complain_details.as_view(), name='get_complain_consignment'),
+    path('process_complain/', process_complain.as_view(), name='get_complain_details'),
 
 ]
 

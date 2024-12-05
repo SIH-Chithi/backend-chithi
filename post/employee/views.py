@@ -1263,3 +1263,130 @@ class verify_delivery_otp(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+
+class get_complains(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            type = employee.type
+            office_id = employee.office_id
+            
+            
+            
+            #pending complains and resolved complains
+            pending_complains = complains.objects.filter(status="pending",current_office_type=type,current_office_id=office_id)
+            
+            resolved_complains = complains.objects.filter(status="resolved",current_office_type=type,current_office_id=office_id)
+            
+            # transferred complains
+            
+            transferred_complains_ids = complain_journey.objects.filter(transferred_office_type = type ,transferred_office_id=office_id).values_list('complain_id',flat=True)
+            
+            transferred_complains = complains.objects.filter(complain_id__in=transferred_complains_ids)
+            
+            pending_serializer = list_complains_serializer(pending_complains, many=True)
+            resolved_serializer = list_complains_serializer(resolved_complains, many=True)
+            transferred_serializer = list_complains_serializer(transferred_complains, many=True)
+            
+            return Response({"pending_complains": pending_serializer.data,
+                            "resolved_complains": resolved_serializer.data,
+                            "transferred_complains": transferred_serializer.data}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+class get_complain_details(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id=token_process_employee(request)
+        except AuthenticationFailed as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            complain_id=request.data.get("complain_id")
+            if not complain_id:
+                return Response({"complain_id": "Complain id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            complain_obj=complains.objects.get(complain_id=complain_id)
+            consignment_obj =  complain_obj.consignment_id
+            consignment_route_obj=consignment_route.objects.get(consignment_id=consignment_obj)
+            if not consignment_route_obj:
+                return Response({"error": "Consignment route not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            route = consignment_route_obj.get_route()
+            routes = add_office_name(route)
+            serializer=complain_serializer(complain_obj)
+            
+            return JsonResponse({"complain": serializer.data,
+                                "routes":routes}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
+        
+# resolve complain or transfer complain
+
+class process_complain(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id=token_process_employee(request)
+        except AuthenticationFailed as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            print(employee.type,employee.office_id)
+            data=request.data
+            complain_id=data['complain_id']
+            
+            
+            if not complain_id:
+                return Response({"complain_id": "Complain id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not complains.objects.filter(complain_id=complain_id,current_office_type=employee.type,current_office_id=employee.office_id):
+                return Response({"error": "Complain not found "}, status=status.HTTP_400_BAD_REQUEST)
+            
+            complain_obj=complains.objects.get(complain_id=complain_id)
+            
+            if complain_obj.status=="resolved":
+                return Response({"message": "Complain already resolved"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
+            stat = data['status']
+            if not stat:
+                return Response({"status": "Status is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if stat == "resolved":
+                complain_obj=complains.objects.get(complain_id=complain_id)
+                complain_obj.status="resolved"
+                complain_obj.save()
+                return Response({"message": "Complain resolved successfully"}, status=status.HTTP_200_OK)
+            
+            elif stat == "pending":
+                complain_obj = complains.objects.get(complain_id=complain_id)
+                comments = data['comment']
+                if not comments:
+                    return Response({"comment": "Comment is required"}, status=status.HTTP_400_BAD_REQUEST)
+                transferred_office_type = data['office_type']
+                transferred_office_id = data['office_id']
+                complain_journey.objects.create(complain_id=complain_obj,transferred_office_type=employee.type, transferred_office_id=employee.office_id,comments=comments)
+                complain_obj.status = "transferred" 
+                complain_obj.current_office_type = transferred_office_type
+                complain_obj.current_office_id = transferred_office_id
+                complain_obj.save()
+                
+                return Response({"message": "Complain transferred successfully"}, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                
+            
+            

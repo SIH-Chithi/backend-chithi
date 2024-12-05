@@ -183,7 +183,7 @@ def update_next_destination(consignments,employee):
     except ValueError:
         raise Exception(f"Point '{point}' not found in route")
     
-    
+# Function to update the next destination of a consignment   
 def update_next(consignment,employee):
     try:
         consignment_route_obj=consignment_route.objects.get(consignment_id=consignment)
@@ -211,7 +211,7 @@ def update_next(consignment,employee):
     except ValueError:
         raise Exception(f"Point '{point}' not found in route")
     
-    
+# Function to update the traffic count of the adjacent NSHs  
 def update_checkin_count(nsh_obj,counting):
     try:
         if adjacent_nsh_data.objects.filter(nsh2=nsh_obj).exists():
@@ -221,7 +221,8 @@ def update_checkin_count(nsh_obj,counting):
                 i.save()                                  
     except Exception as  e:
         return Response({"error",str(e)},status=status.HTTP_400_BAD_REQUEST)
-    
+
+# Function to update the checkout    
 def update_checkout_count(nsh_obj,counting):
     try:
         if adjacent_nsh_data.objects.filter(nsh2=nsh_obj).exists():
@@ -231,3 +232,43 @@ def update_checkout_count(nsh_obj,counting):
                 i.save()                                  
     except Exception as  e:
         return Response({"error",str(e)},status=status.HTTP_400_BAD_REQUEST)
+    
+#get complains of a office
+
+def get_complains_of_office(office_type,office_id):
+    try:
+        complaints = complain_journey.objects.filter(to_type=office_type,to_id=office_id,complain_status="pending"or"passed")
+        return complaints
+    except Exception as e:
+        raise Exception(str(e))
+    
+#get route with office name
+from django.db.models import Q
+
+def add_office_name(route):
+    try:
+        updated_route = {}
+        
+        for key, value in route.items():
+            
+            office_type= key[:3]
+            
+            if office_type == "spo":
+                office_name=SPO.objects.get(spo_id=value).office_name
+            elif office_type == "hpo":
+                office_name=HPO.objects.get(hpo_id=value).office_name
+            elif office_type == "ich":
+                office_name=ICH.objects.get(ich_id=value).office_name
+            elif office_type == "nsh":
+                office_name=NSH.objects.get(nsh_id=value).office_name
+            else:
+                office_name="none"
+                
+            updated_route[key]= {
+                "id": value,
+                "name": office_name
+            }
+        return updated_route
+    except Exception as e:
+        raise Exception(str(e))
+    

@@ -576,6 +576,27 @@ def delete_delivery_otp(consignment_obj):
         pass    
 
 
+def start_complain_journey(consignment_obj,complain_obj):
+    try:
+        consignment_route_obj=consignment_route.objects.get(consignment_id=consignment_obj)
+        
+        route=consignment_route_obj.get_route()
+        nsh_start=route['nsh_start']
+        
+        complain_obj.status="pending"
+        complain_obj.nsh_office=nsh_start
+        
+        complain_obj.current_office_type="nsh"
+        complain_obj.current_office_id=nsh_start
+        
+        complain_obj.save()
+        
+    
+    except consignment_route.DoesNotExist:
+        raise ValueError("Consignment not found")
+    
+    except Exception as e:
+        raise ValueError(str(e))
 
 
 
