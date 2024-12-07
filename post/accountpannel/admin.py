@@ -13,6 +13,13 @@ for model in  app_models:
             
     class ModelAdmin(ImportExportAdmin):
         resource_class = ModelResource
+        
+        search_fields = [field.name for field in model._meta.fields]
+        
+        list_filter = [
+            field.name for field in model._meta.fields 
+            if field.get_internal_type() in ['BooleanField', 'DateField', 'ForeignKey', 'IntegerField']
+        ]
     
     try:
         admin.site.register(model, ModelAdmin)

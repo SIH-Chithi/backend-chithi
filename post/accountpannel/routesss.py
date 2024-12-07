@@ -64,19 +64,18 @@ def create_graph_from_db(db_config, target, threshold=0.95):
 def dijkstra(graph, source, target):
     
     try:
-        pq = [(0, source, [])]  # Priority queue: (distance, current_node, path)
+        pq = [(0, source, [])]
+        # Priority queue: (distance, current_node, path)
         visited = set()
         
         while pq:
             current_distance, current_node, path = heapq.heappop(pq)
-            
             if current_node in visited:
                 continue
             visited.add(current_node)
             
             # Update the path
             path = path + [current_node]
-            
 
             pathDic = {}
             # If we reached the target, return the result
@@ -87,6 +86,7 @@ def dijkstra(graph, source, target):
                 for p in path:
                     pathDic[f"nsh{i}"] = p
                     i+=1
+
                 return current_distance, path, pathDic
             if len(path) == 0 :
                     return float('inf'), [], {"error": "Empty path encountered"}  
@@ -96,7 +96,7 @@ def dijkstra(graph, source, target):
                 if neighbor not in visited:
                     heapq.heappush(pq, (current_distance + weight, neighbor, path))
         
-        return float('inf'), []  # No path found
+        return float('inf'), [] ,{"error":f"no"} # No path found
     
     except KeyError as e:
         return float('inf'), [], {"error": f"Node not found in graph: {str(e)}"}
