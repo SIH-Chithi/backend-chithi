@@ -252,18 +252,77 @@ def get_nsh_from_pincode(pin):
             raise ValueError("Pincode is required")
 
         pins = pincode.objects.get(pincode=pin)
+
         spos = SPO.objects.filter(pincode=pins).first()
+        
         hpos = HPO.objects.get(spo=spos)
+
         ichs = ICH.objects.get(hpo=hpos)
+
         nsh = NSH.objects.get(ich=ichs)
+    
 
         return nsh.nsh_id        
     
     except Exception as e:
         raise ValueError(str(e))
 
-    
- 
+def check(spincode,rpincode):
+    try:
+        if not spincode:
+            return Response({"pincode": "Pincode is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not rpincode:
+            return Response({"pincode": "Pincode is required"}, status=status.HTTP_400_BAD_REQUEST)
+        if spincode==rpincode:
+            return Response({"pincode": "Pincode cannot be same"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        route = OrderedDict()
+        sender_spo=SPO.objects.get(pincode=spincode)
+        receiver_spo=SPO.objects.get(pincode=rpincode)
+        
+        sender_hpo=HPO.objects.get(spo=sender_spo)
+        receiver_hpo=HPO.objects.get(spo=receiver_spo)
+        
+        sender_ich=ICH.objects.get(hpo=sender_hpo)
+        receiver_ich=ICH.objects.get(hpo=receiver_hpo)
+
+        
+        sender_nsh=NSH.objects.get(ich=sender_ich)
+        receiver_nsh=NSH.objects.get(ich=receiver_ich)
+        
+        if sender_hpo==receiver_hpo:
+            route['spo_start']=sender_spo.spo_id
+            route['hpo_start']=sender_hpo.hpo_id
+            route['spo_end']=receiver_spo.spo_id
+            return route
+        
+        elif sender_ich==receiver_ich:
+            route['spo_start']=sender_spo.spo_id
+            route['hpo_start']=sender_hpo.hpo_id
+            route['ich_start']=sender_ich.ich_id
+            route['hpo_end']=receiver_hpo.hpo_id
+            route['spo_end']=receiver_spo.spo_id
+            
+            return route
+        
+        elif sender_nsh==receiver_nsh:
+            route['spo_start']=sender_spo.spo_id
+            route['hpo_start']=sender_hpo.hpo_id
+            route['ich_start']=sender_ich.ich_id
+            route['nsh_start']=sender_nsh.nsh_id
+            route['ich_end']=receiver_ich.ich_id
+            route['hpo_end']=receiver_hpo.hpo_id
+            route['spo_end']=receiver_spo.spo_id
+            
+            return route
+        
+        else:
+            return None
+        
+        
+    except Exception as e:
+        raise ValueError(str(e))
+
 def reverse_dict(dictionary):
     return dict(reversed(list(dictionary.items())))
 
@@ -599,6 +658,209 @@ def start_complain_journey(consignment_obj,complain_obj):
         raise ValueError(str(e))
 
 
+#function add pincode
+import csv
+def add_pincodes_from_csv():
+    try:
+        file_path = r'C:\Users\rj807\OneDrive\Desktop\SIH-data\filtered.csv'
+        with open(file_path, mode='r') as file:
+            reader = csv.DictReader(file)
+            pincodes = [
+                pincode(
+                    pincode=row['pincode'],
+                    division_name=row['division_name'],
+                    region_name=row['region_name'],
+                    circle_name=row['circle_name'],
+                    district_name=row['district_name'],
+                    state_name=row['state_name']
+                )
+                for row in reader
+            ]
+            pincode.objects.bulk_create(pincodes, ignore_conflicts=True)
+            print(f"{len(pincodes)} pincodes successfully added to the database.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
-    
-        
+
+       
+#function to add spo
+
+import pandas as pd
+
+
+def add_spo():
+    csv_file_path = r'C:\Users\rj807\OneDrive\Desktop\SIH-data\so_offices.csv'  # Adjust if needed
+
+    # Read the CSV data
+    data = pd.read_csv(csv_file_path)
+
+    # Initialize counters
+    success_count = 0
+    failure_count = 0
+    missing_pincode_count = 0
+
+    # Iterate over the rows of the CSV file
+    for index, row in data.iterrows():
+        try:
+            # Fetch the related pincode object
+            pin = pincode.objects.get(pincode=row['pincode'])
+            
+            # Create and save the SPO object
+            SPO.objects.create(
+                pincode=pin,
+                office_name=row['office_name'],
+                divsion_name=row['division_name'],
+                circle_name=row['circle_name'],
+                district_name=row['district_name'],
+                state_name=row['state_name'],
+                region_name=row['region_name'],
+            )
+            success_count += 1
+        except pincode.DoesNotExist:
+            missing_pincode_count += 1
+        except Exception as e:
+            failure_count += 1
+
+    # Print the summary of the process
+    print(f"Processing completed:")
+    print(f"  Successfully inserted SPOs: {success_count}")
+    print(f"  Rows with missing pincodes: {missing_pincode_count}")
+    print(f"  Rows with other errors: {failure_count}")
+
+
+def add_hpo():
+# Load the CSV files
+    ho_offices_path = r'C:\Users\rj807\OneDrive\Desktop\SIH-data\ho_offices.csv'
+    so_offices_path = r'C:\Users\rj807\OneDrive\Desktop\SIH-data\so_offices.csv'
+
+    ho_offices_df = pd.read_csv(ho_offices_path)
+    so_offices_df = pd.read_csv(so_offices_path)
+
+    # Step 1: Populate the HPO table
+    for _, row in ho_offices_df.iterrows():
+        try:
+            hpo, created = HPO.objects.get_or_create(
+                ho_pincode=row['pincode'],
+                office_name=row['officename'],
+                region_name=row['regionname'],
+                division_name=row['divisionname'],
+                circle_name=row['circlename'],
+                district_name=row['Districtname'],
+                state_name=row['statename'],
+            )
+            if created:
+                print(f"Inserted HPO: {row['officename']} with pincode {row['pincode']}")
+        except Exception as e:
+            print(f"Error inserting HPO: {row['officename']} - {e}")
+
+    # Step 2: Establish relationships between SPO and HPO
+    for _, row in so_offices_df.iterrows():
+        try:
+            # Fetch the SPO object
+            spo = SPO.objects.get(pincode__pincode=row['pincode'], office_name=row['office_name'])
+
+            # Fetch the HPO object based on Related Headoffice
+            hpo = HPO.objects.filter(office_name=row['Related Headoffice']).first()
+
+            if hpo:
+                # Establish the relationship
+                spo.hpos.add(hpo)
+                print(f"Linked SPO: {row['office_name']} to HPO: {hpo.office_name}")
+            else:
+                print(f"Related Headoffice {row['Related Headoffice']} not found for SPO: {row['office_name']}")
+
+        except SPO.DoesNotExist:
+            print(f"SPO {row['office_name']} not found in the database.")
+        except Exception as e:
+            print(f"Error linking SPO {row['office_name']} - {e}")
+            
+            
+def add_ich():
+    ho_offices_path = r'C:\Users\rj807\OneDrive\Desktop\SIH-data\ho_offices1.csv'
+    ich_offices_path = r'C:\Users\rj807\OneDrive\Desktop\SIH-data\ich - Sheet1.csv'
+
+    ho_offices_df = pd.read_csv(ho_offices_path)
+    ich_offices_df = pd.read_csv(ich_offices_path)
+
+    # Step 1: Populate the HPO table
+    for _, row in ich_offices_df.iterrows():
+        try:
+            hpo, created = ICH.objects.get_or_create(
+                ich_pincode=row['pincode'],
+                office_name=row['office_name'],
+                region_name=row['region_name'],
+                division_name=row['division_name'],
+                circle_name=row['circle_name'],
+                district_name=row['district_name'],
+                state_name=row['state_name'],
+            )
+            if created:
+                print(f"Inserted ICH: {row['office_name']} with pincode {row['pincode']}")
+        except Exception as e:
+            print(f"Error inserting ICH: {row['office_name']} - {e}")
+
+    # Step 2: Establish relationships between HPO and ICH
+    for _, row in ho_offices_df.iterrows():
+        try:
+            # Fetch the hpo object
+            hpo = HPO.objects.get(office_name=row['officename'])
+
+            # Fetch the ich object based on Related Headoffice
+            ich = ICH.objects.filter(office_name=row['RelatedIchOffice']).first()
+
+            if ich:
+                # Establish the relationship
+                ich.hpo.add(hpo)
+                print(f"Linked : {row['officename']} to HPO: {hpo.office_name}")
+            else:
+                print(f"Related ich {row['RelatedIchOffice']} not found for HPO: {row['officename']}")
+
+        except HPO.DoesNotExist:
+            print(f"HPO {row['officename']} not found in the database.")
+        except Exception as e:
+            print(f"Error linking HPO {row['officename']} - {e}")
+            
+def add_nsh():
+    ich_offices_path = r'c:\Users\rj807\OneDrive\Desktop\SIH-data\ich - Sheet1.csv'
+    nsh_offices_path = r'C:\Users\rj807\OneDrive\Desktop\SIH-data\NSH - Sheet1.csv'
+    ich_offices_df = pd.read_csv(ich_offices_path)
+    nsh_offices_df = pd.read_csv(nsh_offices_path)
+
+    # Step 1: Populate the ICH table
+    for _, row in nsh_offices_df.iterrows():
+        try:
+            ich, created = NSH.objects.get_or_create(
+                nsh_pincode=row['pincode'],
+                office_name=row['office_name'],
+                region_name=row['region_name'],
+                division_name=row['division_name'],
+                circle_name=row['circle_name'],
+                district_name=row['district_name'],
+                state_name=row['state_name'],
+            )
+            if created:
+                print(f"Inserted NSH: {row['office_name']} with pincode {row['pincode']}")
+        except Exception as e:
+            print(f"Error inserting NSH: {row['office_name']} - {e}")
+
+    # Step 2: Establish relationships between ICH and NSH
+    for _, row in ich_offices_df.iterrows():
+        try:
+            # Fetch the ich object
+            ich = ICH.objects.get(office_name=row['office_name'])
+
+            # Fetch the nsh object based on Related Headoffice
+            nsh = NSH.objects.filter(office_name=row['RelatedNSH']).first()
+
+            if nsh:
+                # Establish the relationship
+                nsh.ich.add(ich)
+                print(f"Linked : {row['office_name']} to ICH: {ich.office_name}")
+            else:
+                print(f"Related nsh {row['RelatedNSH']} not found for ICH: {row['office_name']}")
+
+        except ICH.DoesNotExist:
+            print(f"ICH {row['office_name']} not found in the database.")
+        except Exception as e:
+            print(f"Error linking ICH {row['office_name']} - {e}")
+            

@@ -11,6 +11,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 import pandas as pd
 import csv
 from collections import defaultdict
+from employee.serializers import *
 
 import psycopg2
 from .routesss import create_graph_from_db, dijkstra    
@@ -263,9 +264,20 @@ class book_consignment(APIView):
                     pickup_time=data["pickup"]["pickup_time"],
                     pickup_amount=data["pickup"]["pickup_amount"]
                 )    
+            route=check(data["sender"]["pincode"],data["receiver"]["pincode"])    
+            
+            if route:
+                obj=consignment_route.objects.create(consignment_id=consignment_obj,pointer="spo_start")
+                obj.save_route(route)
+                obj.save()
+                
+                return Response({"message": "Consignment booked successfully",
+                                "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)
+                
             #getting nsh from pincode    
             source_nsh=get_nsh_from_pincode(data["sender"]["pincode"])
             destination_nsh=get_nsh_from_pincode(data["receiver"]["pincode"])
+
             
             #getting path from nsh
             sender_path_dic=get_path_from_pincode(data["sender"]["pincode"],"start")
@@ -286,10 +298,12 @@ class book_consignment(APIView):
             obj.save_route(merge_dic)
             obj.save()
             
-            
-                
             return Response({"message": "Consignment booked successfully",
                         "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)   
+        
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+            
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)       
 #calculate postage
@@ -651,5 +665,32 @@ class get_consignment_reviews(APIView):
             rating=consignment_reviews_obj.rating
             
             return Response({"rating": rating}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+#get complains details by user
+class get_complain_details(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            phone_number, user=token_process(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            data=request.data
+            if not data:
+                return Response({"data": "Data is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            complain_id=data["complain_id"]
+            complain_obj=complains.objects.get(complain_id=complain_id,user=user)
+            if not complain_obj:
+                return Response({"complain_id": "Complain does not exist with this id"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_obj=complain_obj.consignment_id
+            serializers=complain_serializer(complain_obj)
+            
+            return Response({"complain": serializers.data, "consignment_id": consignment_obj.consignment_id}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

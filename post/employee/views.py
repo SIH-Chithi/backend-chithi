@@ -331,6 +331,17 @@ class book_consignment_spo(APIView):
                     height=data["parcel"]["height"],
                     price=data["parcel"]["price"]
                 )
+            
+            route=check(data["sender"]["pincode"],data["receiver"]["pincode"])    
+            
+            if route:
+                obj=consignment_route.objects.create(consignment_id=consignment_obj,pointer="spo_start")
+                obj.save_route(route)
+                obj.save()
+                
+                return Response({"message": "Consignment booked successfully",
+                                "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)
+                
             #getting nsh from pincode    
             source_nsh=get_nsh_from_pincode(data["sender"]["pincode"])
             destination_nsh=get_nsh_from_pincode(data["receiver"]["pincode"])
@@ -751,6 +762,8 @@ class book_consignment_hpo(APIView):
                 phone_number=data["receiver"]["phone_number"]
             )
             
+            
+            
             if data["type"]=="parcel":
                 if not data.get("parcel"):
                     return Response({"parcel": "Parcel details are required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -762,6 +775,17 @@ class book_consignment_hpo(APIView):
                     height=data["parcel"]["height"],
                     price=data["parcel"]["price"]
                 )
+            
+            route=check(data["sender"]["pincode"],data["receiver"]["pincode"])    
+            
+            if route:
+                obj=consignment_route.objects.create(consignment_id=consignment_obj,pointer="hpo_start")
+                obj.save_route(route)
+                obj.save()
+                
+                return Response({"message": "Consignment booked successfully",
+                                "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)
+                
             #getting nsh from pincode    
             source_nsh=get_nsh_from_pincode(data["sender"]["pincode"])
             destination_nsh=get_nsh_from_pincode(data["receiver"]["pincode"])
@@ -939,8 +963,6 @@ class checkout_NSH(APIView):
 
 
 #class get traffic report       
-
-
 class get_traffic_report(APIView):
     authentication_classes = []
     permission_classes = []
@@ -960,6 +982,7 @@ class get_traffic_report(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
+#get specific report      
 class specific_report(APIView):
     authentication_classes = []
     permission_classes = []
@@ -1265,7 +1288,7 @@ class verify_delivery_otp(APIView):
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         
 
-
+#COMPLAINS SECTION
 
 class get_complains(APIView):
     authentication_classes = []
@@ -1343,7 +1366,6 @@ class process_complain(APIView):
         except AuthenticationFailed as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
         try:
-            print(employee.type,employee.office_id)
             data=request.data
             complain_id=data['complain_id']
             
