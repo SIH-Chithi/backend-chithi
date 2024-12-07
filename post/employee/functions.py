@@ -86,8 +86,7 @@ def employee_required(*allowed_role):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            # Extract token from the Authorization header
-            print(request.headers)
+
             auth_header = request.headers.get('Authorization')
             if not auth_header or not auth_header.startswith('Bearer '):
                 return JsonResponse({'error': 'Authorization token is missing or invalid.'}, status=401)
