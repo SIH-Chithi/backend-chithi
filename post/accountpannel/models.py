@@ -195,7 +195,7 @@ service_types=(
     ('speedpost','speedpost'),
 )
 class consignment(models.Model):        
-    consignment_id = models.CharField(max_length=12, primary_key=True, editable=False)
+    consignment_id = models.IntegerField(primary_key=True,editable=False)
     user=models.ForeignKey(User,on_delete=models.CASCADE)
     type=models.CharField(max_length=50,choices=parcel_types)
     created_place=models.CharField(max_length=10)
@@ -216,7 +216,7 @@ class consignment(models.Model):
     def generate_consignment_id(self):
         while True:
             random_number = random.randint(10000000, 99999999)  # Generate an 8-digit number
-            new_id = f"OID{random_number}"
+            new_id = random_number
             if not consignment.objects.filter(consignment_id=new_id).exists():
                 return new_id
             
@@ -276,7 +276,7 @@ status=(
     ('resolved','resolved')
 )  
 class complains(models.Model):
-    complain_id=models.CharField(max_length=12, primary_key=True, editable=False)
+    complain_id=models.IntegerField(primary_key=True,editable=False)
     consignment_id=models.ForeignKey('consignment', on_delete=models.CASCADE)    
     user=models.ForeignKey(User,on_delete=models.CASCADE)
     created_on=models.DateTimeField(auto_now_add=True)
@@ -295,7 +295,7 @@ class complains(models.Model):
     def generate_complain_id(self):
         while True:
             random_number = random.randint(10000000, 99999999)  # Generate an 8-digit number
-            new_id = f"CID{random_number}"
+            new_id = random_number
             if not complains.objects.filter(complain_id=new_id).exists():
                 return new_id
     
