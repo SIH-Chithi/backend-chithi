@@ -1421,7 +1421,6 @@ class get_system_complains(APIView):
         except AuthenticationFailed as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
         complains=system_complain.objects.filter(office_id=employee.office_id,type=employee.type)
-        print(complains)
         if not complains:
             return Response({"message": "No complains found"}, status=status.HTTP_400_BAD_REQUEST)
         serializer=get_system_serializer(complains, many=True)
@@ -1506,7 +1505,6 @@ class give_message(APIView):
             sender_details_obj=senders_details.objects.get(consignment_id=consignment_obj)
             
             phone_number=sender_details_obj.phone_number
-            print(phone_number)
             
             send_message_reason(phone_number,message)
             
@@ -1533,5 +1531,4 @@ def send_message_reason(phone_number,message):
         return True
     except Exception as e:
         # Log the error for debugging
-        print(f"Error sending message: {e}")
         return False
