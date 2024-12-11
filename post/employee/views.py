@@ -1409,6 +1409,126 @@ class process_complain(APIView):
             
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+#get system generated complains
                 
+class get_system_complains(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id=token_process_employee(request)
+        except AuthenticationFailed as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+        complains=system_complain.objects.filter(office_id=employee.office_id,type=employee.type)
+        if not complains:
+            return Response({"message": "No complains found"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer=get_system_serializer(complains, many=True)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
             
+#create system generated complain
+class create_system_complain(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id=token_process_employee(request)
+        except AuthenticationFailed as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            data=request.data
+
+            consignment_id = data['consignment_id']
+            if not consignment_id:
+                return Response({"no consignment":"no consignment"}, status=status.HTTP_400_BAD_REQUEST)
             
+            consignment_obj=consignment.objects.get(consignment_id=consignment_id)
+            system_complain.objects.create(office_id=employee.office_id,type=employee.type,consignment_id=consignment_obj)
+            
+            return Response({"message": "Complain created successfully"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+class get_details_system_complain(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id=token_process_employee(request)
+        except AuthenticationFailed as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            data=request.data
+            complain_id=data['complain_id']
+            if not complain_id:
+                return Response({"complain_id": "Complain id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            complain_obj=system_complain.objects.get(complain_id=complain_id)
+            
+            if not complain_obj:
+                return Response({"error": "Complain not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            serializers=get_system_complain_details_serializer(complain_obj)
+
+            return Response(serializers.data, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)
+        
+        
+#give message
+class give_message(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def post(self,request):
+        try:
+            employee, employee_type, Employee_id=token_process_employee(request)
+        except AuthenticationFailed as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            data=request.data
+            message=data['message']
+            complain_id=data['complain_id']
+            
+            if not message:
+                return Response({"message": "Message is required"}, status=status.HTTP_400_BAD_REQUEST)
+            if not complain_id:
+                return Response({"complain_id": "Complain id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            complain_obj=system_complain.objects.get(complain_id=complain_id)
+            if not complain_obj:
+                return Response({"error": "Complain not found"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            consignment_obj=complain_obj.consignment_id
+            sender_details_obj=senders_details.objects.get(consignment_id=consignment_obj)
+            
+            phone_number=sender_details_obj.phone_number
+            
+            send_message_reason(phone_number,message)
+            
+            complain_obj.message=message
+            complain_obj.save()
+            
+            return Response({"message": "message done"}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+def send_message_reason(phone_number,message):
+    try:
+        payload = {
+            'from': "Vonage APIs",
+            'to': int("91" + str(phone_number)),
+        
+            'text': message,
+            'api_key': settings.VONAGE_API_KEY,
+            'api_secret': settings.VONAGE_API_SECRET
+        }
+        url = "https://rest.nexmo.com/sms/json"
+        response = sendsms(payload, url)
+        return True
+    except Exception as e:
+        # Log the error for debugging
+        return False
