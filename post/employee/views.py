@@ -617,7 +617,7 @@ class checkin(APIView):
             
             for consignment_obj in consignments:
                 consignment_journey.objects.create(consignment_id=consignment_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_in")   
-                
+
             container_journey.objects.create(container_id=container_obj,created_at=employee.type,created_place_id=employee.office_id,process="check_in")
             
             threading.Thread(target=update_next_destination, args=(consignments,employee)).start()  #start thread to update next destination
@@ -1392,7 +1392,7 @@ class process_complain(APIView):
                 complain_obj.save()
                 return Response({"message": "Complain resolved successfully"}, status=status.HTTP_200_OK)
             
-            elif stat == "pending":
+            elif stat == "transferred":
                 complain_obj = complains.objects.get(complain_id=complain_id)
                 comments = data['comment']
                 if not comments:
@@ -1404,7 +1404,7 @@ class process_complain(APIView):
                 complain_obj.current_office_type = transferred_office_type
                 complain_obj.current_office_id = transferred_office_id
                 complain_obj.save()
-                
+
                 return Response({"message": "Complain transferred successfully"}, status=status.HTTP_200_OK)
             
         except Exception as e:

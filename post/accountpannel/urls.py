@@ -24,4 +24,5 @@ urlpatterns = [
     path('postreview/', post_consignment_reviews.as_view(), name='postreview'),
     path('getreview/', get_consignment_reviews.as_view(), name='getreview'),
     path('getcomplaintdetails/', get_complain_details.as_view(), name='getcomplaintdetails'),
+    path('gettime/', get_time.as_view(), name='gettime'),
 ]
