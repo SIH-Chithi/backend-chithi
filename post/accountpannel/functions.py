@@ -905,7 +905,7 @@ def add_system_comaplins():
     consignment_obj=consignment.objects.all()
     for obj in consignment_obj:
         try:
-            last_check_in = (consignment_journey.objects.filter(consignment_id=obj).order_by('-date_time') )
+            last_check_in = (consignment_journey.objects.filter(consignment_id=obj).order_by('-date_time').first()) 
             if not last_check_in:
                 continue
             times= last_check_in.date_time
@@ -913,22 +913,23 @@ def add_system_comaplins():
             current_time = timezone.now()
             time_difference = current_time - times
             
-            if time_difference > timedelta(hours=36):
-                extra_time = time_difference - timedelta(hours=36)
+            if time_difference > timedelta(hours=1):
+                extra_time = time_difference - timedelta(hours=1)
                 senders_details_obj=senders_details.objects.get(consignment_id=obj)
                 phone_number=senders_details_obj.phone_number
                 send_message_delay(phone_number,extra_time)
                 
                 type=last_check_in.created_at
-                id=last_check_in.current_place_id
-                system_complain_obj=system_complain.objects.create(consignment_id=obj,type=type,office_id=id,delayed_time=extra_time)
+                id=last_check_in.created_place_id
+                #system_complain.objects.create(consignment_id=obj,type=type,office_id=id,delayed_time=extra_time)
                 pass
             
             else:
                 continue
             
+            
         except Exception as e:
-            pass     
+            print(f"Error adding system complain: {e}")
 
 def send_message_delay(phone_number,delay_time):
     try:
@@ -939,6 +940,7 @@ def send_message_delay(phone_number,delay_time):
             'api_key': settings.VONAGE_API_KEY,
             'api_secret': settings.VONAGE_API_SECRET
         }
+        print(payload)
         url = "https://rest.nexmo.com/sms/json"
         response = sendsms(payload, url)
         return True
@@ -946,4 +948,23 @@ def send_message_delay(phone_number,delay_time):
         # Log the error for debugging
         print(f"Error sending message: {e}")
         return False
-    
+
+import threading
+import time
+from datetime import datetime
+
+interval = 24 * 60 * 60 
+
+
+def thread_run(func,intervel):
+    def wrapper():
+        while True:
+            func()
+            time.sleep(intervel)
+            
+    thread = threading.Thread(target=wrapper)
+    thread.daemon = True  # Daemon thread stops when the main program exits
+    thread.start()
+        
+#thread_run(add_system_comaplins,interval)
+

@@ -254,6 +254,7 @@ class consignment_journey(models.Model):
     created_place_id=models.IntegerField()
     date_time=models.DateTimeField(auto_now_add=True)
     process=models.CharField(max_length=10,choices=process)
+    msg=models.TextField(blank=True,null=True)
     
     def __str__(self):
         return f"{self.consignment_id} - {self.created_at}"
@@ -426,7 +427,7 @@ class system_complain(models.Model):
     type=models.CharField(max_length=50,choices=office_types)
     office_id=models.IntegerField()
     message=models.TextField(blank=True,null=True)
-    delayed_time=models.IntegerField(blank=True,null=True)
+    delayed_time=models.CharField(blank=True,null=True)
     created_time=models.DateTimeField(auto_now_add=True)
     
     def save(self, *args, **kwargs):
