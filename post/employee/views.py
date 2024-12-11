@@ -1504,6 +1504,10 @@ class give_message(APIView):
             consignment_obj=complain_obj.consignment_id
             sender_details_obj=senders_details.objects.get(consignment_id=consignment_obj)
             
+            consignment_journey_obj=consignment_journey.objects.filter(consignment_id=consignment_obj,process="check_in").order_by('-date_time').first()
+            consignment_journey_obj.msg = message
+            consignment_journey_obj.save()
+            
             phone_number=sender_details_obj.phone_number
             
             send_message_reason(phone_number,message)

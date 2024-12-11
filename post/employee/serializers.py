@@ -184,10 +184,10 @@ class get_system_serializer(serializers.ModelSerializer):
     
     class Meta:
         model = system_complain
-        fields = ['complain_id','consignment_id','created_time','message'] 
+        fields = ['complain_id','consignment_id','created_time','message','delayed_time'] 
 
 class get_system_complain_details_serializer(serializers.ModelSerializer):
     consignment_details=consignment_details_serializer(source='consignment_id')
     class Meta:
         model = system_complain
-        fields = ['complain_id','consignment_id','created_time','message','consignment_details']
+        fields = ['complain_id','consignment_id','created_time','message','consignment_details','delayed_time']
