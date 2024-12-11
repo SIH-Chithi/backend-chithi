@@ -41,7 +41,32 @@ def verify_otp(otp,phone_number):
 
 def generate_otp():
     import random
-    return random.randint(100000,999999)    
+    return random.randint(100000,999999) 
+
+from twilio.rest import Client
+
+def send_otp_twilio():
+    account_sid = settings.TWILIO_ACCOUNT_SID
+    auth_token = settings.TWILIO_AUTH_TOKEN
+    twilio_number = settings.TWILIO_PHONE_NUMBER 
+    
+    client= Client(account_sid,auth_token)
+    otp = generate_otp()
+    message_body = f"Your OTP is: {otp}"
+    try:
+        # Send the SMS
+        message = client.messages.create(
+            body=message_body,
+            from_=twilio_number,
+            to='919450959599'
+        )
+        print(f"Message sent successfully: {message.sid}")
+        return otp  # Return OTP for validation
+    except Exception as e:
+        print(f"Failed to send message: {str(e)}")
+        return None
+    
+
     
 def send_otp(phone_number):
     try:
@@ -640,7 +665,10 @@ def start_complain_journey(consignment_obj,complain_obj):
         consignment_route_obj=consignment_route.objects.get(consignment_id=consignment_obj)
         
         route=consignment_route_obj.get_route()
-        nsh_start=route['nsh_start']
+        senders_details_obj=senders_details.objects.get(consignment_id=consignment_obj)
+        sender_pincode=senders_details_obj.pincode
+        nsh_start = get_nsh_from_pincode(sender_pincode)
+        #nsh_start=route['nsh_start']
         
         complain_obj.status="pending"
         complain_obj.nsh_office=nsh_start

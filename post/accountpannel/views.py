@@ -426,30 +426,29 @@ class register_complain(APIView):
         except ValueError as e:
             return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)
         
-        try:
-            data=request.data    
-            
-            if not data:
-                return Response({"data": "Data is required"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            consignment_id=data["consignment_id"]
-            complain=data["complain"]
-            
-            consignment_obj=consignment.objects.get(consignment_id=consignment_id)
-            if not consignment_obj:
-                return Response({"consignment_id": "Consignment does not exist with this id"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            if consignment_obj.user!=user:
-                return Response({"user": "User does not have permission to register complain for this consignment"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            complain_obj=complains.objects.create(user=user,complain=complain, consignment_id=consignment_obj)
-            
-            start_complain_journey(consignment_obj, complain_obj)
-            
-            return  Response({"message": "Complain registered successfully",
-                            "complain_id":complain_obj.complain_id}, status=status.HTTP_200_OK)
-        except Exception as e :
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+        data=request.data    
+        
+        if not data:
+            return Response({"data": "Data is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        consignment_id=data["consignment_id"]
+        complain=data["complain"]
+        
+        consignment_obj=consignment.objects.get(consignment_id=consignment_id)
+        if not consignment_obj:
+            return Response({"consignment_id": "Consignment does not exist with this id"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if consignment_obj.user!=user:
+            return Response({"user": "User does not have permission to register complain for this consignment"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        complain_obj=complains.objects.create(user=user,complain=complain, consignment_id=consignment_obj)
+        
+        start_complain_journey(consignment_obj, complain_obj)
+        
+        return  Response({"message": "Complain registered successfully",
+                        "complain_id":complain_obj.complain_id}, status=status.HTTP_200_OK)
+
         
 
 #get complains
