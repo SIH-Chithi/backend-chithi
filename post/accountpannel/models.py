@@ -207,6 +207,7 @@ class consignment(models.Model):
     status=models.BooleanField(default=False)
     service=models.CharField(max_length=50,default='other',choices=service_types)
     is_out_for_delivery=models.BooleanField(default=False)
+    time = models.DateTimeField(blank=True, null=True)
     
     def save(self, *args, **kwargs):
         if not self.consignment_id:
@@ -344,6 +345,7 @@ class consignment_route(models.Model):
     route=models.TextField(blank=True,null=True)
     pointer=models.CharField(max_length=50)
     created_at=models.DateTimeField(auto_now_add=True)
+    time=models.DateTimeField(blank=True, null=True)
     
     def save_route(self,route):
         ordered_route = OrderedDict(route)
@@ -416,5 +418,31 @@ class otp_consignments(models.Model):
     
     def __str__(self):
         return f"{self.consignment_id} - {self.otp}"
+    
+    
+class system_complain(models.Model):
+    complain_id=models.IntegerField(primary_key=True,editable=False)
+    consignment_id =  models.ForeignKey('consignment',on_delete=models.CASCADE)
+    type=models.CharField(max_length=50,choices=office_types)
+    office_id=models.IntegerField()
+    message=models.TextField(blank=True,null=True)
+    delayed_time=models.IntegerField(blank=True,null=True)
+    
+    def save(self, *args, **kwargs):
+        if not self.complain_id:
+            self.complain_id = self.generate_complain_id()
+        super().save(*args, **kwargs)
+
+    def generate_complain_id(self):
+        while True:
+            random_number = random.randint(10000000, 99999999)  # Generate an 8-digit number
+            new_id = random_number
+            if not complains.objects.filter(complain_id=new_id).exists():
+                return new_id
+    
+    def __str__(self):
+        return f"{self.complain_id} - {self.consignment_id}"
+    
+    
 
 
