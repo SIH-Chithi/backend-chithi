@@ -427,6 +427,7 @@ class system_complain(models.Model):
     office_id=models.IntegerField()
     message=models.TextField(blank=True,null=True)
     delayed_time=models.IntegerField(blank=True,null=True)
+    created_time=models.DateTimeField(auto_now_add=True)
     
     def save(self, *args, **kwargs):
         if not self.complain_id:

@@ -46,7 +46,12 @@ urlpatterns = [
     path('get_complains/', get_complains.as_view(), name='get_complains'),
     path('get_complain_details/',get_complain_details.as_view(), name='get_complain_consignment'),
     path('process_complain/', process_complain.as_view(), name='get_complain_details'),
-
+    
+    #system complains
+    path('get_system_complains/', get_system_complains.as_view(), name='get_system_complains'),
+    path('create_system_complain/', create_system_complain.as_view(), name='create_system_complain'),
+    path('get_system_complain_details/', get_details_system_complain.as_view(), name='get_system_complain_details'),
+    path('give_message/', give_message.as_view(), name='give_message'),
 ]
 
 
