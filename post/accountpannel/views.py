@@ -264,15 +264,17 @@ class book_consignment(APIView):
                     pickup_time=data["pickup"]["pickup_time"],
                     pickup_amount=data["pickup"]["pickup_amount"]
                 )    
-            route=check(data["sender"]["pincode"],data["receiver"]["pincode"])    
+            route,times=check(data["sender"]["pincode"],data["receiver"]["pincode"])    
             
             if route:
                 obj=consignment_route.objects.create(consignment_id=consignment_obj,pointer="spo_start")
                 obj.save_route(route)
+                obj.time = times
                 obj.save()
                 
                 return Response({"message": "Consignment booked successfully",
-                                "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)
+                                "consignment_id":consignment_obj.consignment_id,
+                            "time":times}, status=status.HTTP_200_OK)
                 
             #getting nsh from pincode    
             source_nsh=get_nsh_from_pincode(data["sender"]["pincode"])
@@ -296,10 +298,14 @@ class book_consignment(APIView):
             
             obj=consignment_route.objects.create(consignment_id=consignment_obj,pointer="spo_start")
             obj.save_route(merge_dic)
+            current_datetime = datetime.now()
+            times = current_datetime + timedelta(days=6)
+            obj.time = times
             obj.save()
             
             return Response({"message": "Consignment booked successfully",
-                        "consignment_id":consignment_obj.consignment_id}, status=status.HTTP_200_OK)   
+                        "consignment_id":consignment_obj.consignment_id,
+                        "time":times}, status=status.HTTP_200_OK)   
         
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)    
@@ -693,3 +699,22 @@ class get_complain_details(APIView):
             return Response({"complain": serializers.data, "consignment_id": consignment_obj.consignment_id}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+class get_time(APIView):
+    def post(self,request):
+        try:
+            data=request.data
+            source=data["source"]
+            destination=data["destination"]
+            if not source or not destination:
+                return Response({"fields": "Source and destination are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            route,times=check(source,destination)
+            if route == None:
+                current_datetime = datetime.now()
+                times = current_datetime + timedelta(days=6)
+                
+            return Response({"time": times}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                

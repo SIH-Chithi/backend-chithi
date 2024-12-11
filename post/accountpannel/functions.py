@@ -319,7 +319,9 @@ def check(spincode,rpincode):
             route['spo_start']=sender_spo.spo_id
             route['hpo_start']=sender_hpo.hpo_id
             route['spo_end']=receiver_spo.spo_id
-            return route
+            current_datetime = datetime.now()
+            times = current_datetime + timedelta(days=2)
+            return route,times
         
         elif sender_ich==receiver_ich:
             route['spo_start']=sender_spo.spo_id
@@ -327,8 +329,10 @@ def check(spincode,rpincode):
             route['ich_start']=sender_ich.ich_id
             route['hpo_end']=receiver_hpo.hpo_id
             route['spo_end']=receiver_spo.spo_id
+            current_datetime = datetime.now()
+            times = current_datetime + timedelta(days=3)
             
-            return route
+            return route,times
         
         elif sender_nsh==receiver_nsh:
             route['spo_start']=sender_spo.spo_id
@@ -338,11 +342,13 @@ def check(spincode,rpincode):
             route['ich_end']=receiver_ich.ich_id
             route['hpo_end']=receiver_hpo.hpo_id
             route['spo_end']=receiver_spo.spo_id
+            current_datetime = datetime.now()
+            times = current_datetime + timedelta(days=4)
             
-            return route
+            return route,times
         
         else:
-            return None
+            return None,None
         
         
     except Exception as e:
@@ -892,3 +898,52 @@ def add_nsh():
         except Exception as e:
             print(f"Error linking ICH {row['office_name']} - {e}")
             
+
+# function to add system_complain
+
+def add_system_comaplins():
+    consignment_obj=consignment.objects.all()
+    for obj in consignment_obj:
+        try:
+            last_check_in = (consignment_journey.objects.filter(consignment_id=obj).order_by('-date_time') )
+            if not last_check_in:
+                continue
+            times= last_check_in.date_time
+            
+            current_time = timezone.now()
+            time_difference = current_time - times
+            
+            if time_difference > timedelta(hours=36):
+                extra_time = time_difference - timedelta(hours=36)
+                senders_details_obj=senders_details.objects.get(consignment_id=obj)
+                phone_number=senders_details_obj.phone_number
+                send_message_delay(phone_number,extra_time)
+                
+                type=last_check_in.created_at
+                id=last_check_in.current_place_id
+                system_complain_obj=system_complain.objects.create(consignment_id=obj,type=type,office_id=id,delayed_time=extra_time)
+                pass
+            
+            else:
+                continue
+            
+        except Exception as e:
+            pass     
+
+def send_message_delay(phone_number,delay_time):
+    try:
+        payload = {
+            'from': "Vonage APIs",
+            'to': int("91" + str(phone_number)),
+            'text': f"Your consignment is delayed by {delay_time}. We regret the inconvenience caused.",
+            'api_key': settings.VONAGE_API_KEY,
+            'api_secret': settings.VONAGE_API_SECRET
+        }
+        url = "https://rest.nexmo.com/sms/json"
+        response = sendsms(payload, url)
+        return True
+    except Exception as e:
+        # Log the error for debugging
+        print(f"Error sending message: {e}")
+        return False
+    
