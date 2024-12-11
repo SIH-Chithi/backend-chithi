@@ -905,7 +905,7 @@ def add_system_comaplins():
     consignment_obj=consignment.objects.all()
     for obj in consignment_obj:
         try:
-            last_check_in = (consignment_journey.objects.filter(consignment_id=obj).order_by('-date_time') )
+            last_check_in = (consignment_journey.objects.filter(consignment_id=obj).order_by('-date_time').first()) 
             if not last_check_in:
                 continue
             times= last_check_in.date_time
@@ -946,4 +946,23 @@ def send_message_delay(phone_number,delay_time):
         # Log the error for debugging
         print(f"Error sending message: {e}")
         return False
-    
+
+import threading
+import time
+from datetime import datetime
+
+interval = 24 * 60 * 60 
+
+
+def thread_run(func,intervel):
+    def wrapper():
+        while True:
+            func()
+            time.sleep(intervel)
+            
+        thread = threading.Thread(target=wrapper)
+        thread.daemon = True  # Daemon thread stops when the main program exits
+        thread.start()
+        
+#thread_run(add_system_comaplins,interval)
+

@@ -254,6 +254,7 @@ class consignment_journey(models.Model):
     created_place_id=models.IntegerField()
     date_time=models.DateTimeField(auto_now_add=True)
     process=models.CharField(max_length=10,choices=process)
+    msg=models.TextField(blank=True,null=True)
     
     def __str__(self):
         return f"{self.consignment_id} - {self.created_at}"
