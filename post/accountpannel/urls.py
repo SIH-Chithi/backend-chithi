@@ -25,4 +25,5 @@ urlpatterns = [
     path('getreview/', get_consignment_reviews.as_view(), name='getreview'),
     path('getcomplaintdetails/', get_complain_details.as_view(), name='getcomplaintdetails'),
     path('gettime/', get_time.as_view(), name='gettime'),
+    path('get_map_data/',getdata_formap.as_view(),name='get_map_data'),
 ]

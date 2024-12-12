@@ -716,7 +716,6 @@ def add_pincodes_from_csv():
         print(f"An error occurred: {e}")
 
 
-       
 #function to add spo
 
 import pandas as pd
@@ -940,7 +939,6 @@ def send_message_delay(phone_number,delay_time):
             'api_key': settings.VONAGE_API_KEY,
             'api_secret': settings.VONAGE_API_SECRET
         }
-        print(payload)
         url = "https://rest.nexmo.com/sms/json"
         response = sendsms(payload, url)
         return True
@@ -968,3 +966,64 @@ def thread_run(func,intervel):
         
 #thread_run(add_system_comaplins,interval)
 
+
+
+data = [
+    # SpeedPost Data
+    {"post_type": "SpeedPost", "weight_min": 0, "weight_max": 50, "distance_min": 0, "distance_max": 8, "cost": 18},
+    {"post_type": "SpeedPost", "weight_min": 0, "weight_max": 50, "distance_min": 9, "distance_max": 200, "cost": 41},
+    {"post_type": "SpeedPost", "weight_min": 0, "weight_max": 50, "distance_min": 201, "distance_max": 1000, "cost": 41},
+    {"post_type": "SpeedPost", "weight_min": 0, "weight_max": 50, "distance_min": 1001, "distance_max": 2000, "cost": 41},
+    {"post_type": "SpeedPost", "weight_min": 0, "weight_max": 50, "distance_min": 2001, "distance_max": 5000, "cost": 41},
+    {"post_type": "SpeedPost", "weight_min": 51, "weight_max": 200, "distance_min": 0, "distance_max": 8, "cost": 30},
+    {"post_type": "SpeedPost", "weight_min": 51, "weight_max": 200, "distance_min": 9, "distance_max": 200, "cost": 41},
+    {"post_type": "SpeedPost", "weight_min": 51, "weight_max": 200, "distance_min": 201, "distance_max": 1000, "cost": 47},
+    {"post_type": "SpeedPost", "weight_min": 51, "weight_max": 200, "distance_min": 1001, "distance_max": 2000, "cost": 71},
+    {"post_type": "SpeedPost", "weight_min": 51, "weight_max": 200, "distance_min": 2001, "distance_max": 5000, "cost": 83},
+    {"post_type": "SpeedPost", "weight_min": 201, "weight_max": 500, "distance_min": 0, "distance_max": 8, "cost": 35},
+    {"post_type": "SpeedPost", "weight_min": 201, "weight_max": 500, "distance_min": 9, "distance_max": 200, "cost": 59},
+    {"post_type": "SpeedPost", "weight_min": 201, "weight_max": 500, "distance_min": 201, "distance_max": 1000, "cost": 71},
+    {"post_type": "SpeedPost", "weight_min": 201, "weight_max": 500, "distance_min": 1001, "distance_max": 2000, "cost": 94},
+    {"post_type": "SpeedPost", "weight_min": 201, "weight_max": 500, "distance_min": 2001, "distance_max": 5000, "cost": 106},
+
+    {"post_type": "Regular", "weight_min": 0, "weight_max": 500, "distance_min": 0, "distance_max": 8, "cost": 30},
+    {"post_type": "Regular", "weight_min": 0, "weight_max": 500, "distance_min": 9, "distance_max": 200, "cost": 50},
+    {"post_type": "Regular", "weight_min": 0, "weight_max": 500, "distance_min": 201, "distance_max": 1000, "cost": 60},
+    {"post_type": "Regular", "weight_min": 0, "weight_max": 500, "distance_min": 1001, "distance_max": 2000, "cost": 70},
+    {"post_type": "Regular", "weight_min": 0, "weight_max": 500, "distance_min": 2001, "distance_max": 5000, "cost": 90},
+    {"post_type": "Regular", "weight_min": 501, "weight_max": 1000, "distance_min": 0, "distance_max": 8, "cost": 38},
+    {"post_type": "Regular", "weight_min": 501, "weight_max": 1000, "distance_min": 9, "distance_max": 200, "cost": 64},
+    {"post_type": "Regular", "weight_min": 501, "weight_max": 1000, "distance_min": 201, "distance_max": 1000, "cost": 78},
+    {"post_type": "Regular", "weight_min": 501, "weight_max": 1000, "distance_min": 1001, "distance_max": 2000, "cost": 100},
+    {"post_type": "Regular", "weight_min": 501, "weight_max": 1000, "distance_min": 2001, "distance_max": 5000, "cost": 110},
+    {"post_type": "Regular", "weight_min": 1001, "weight_max": 5000, "distance_min": 0, "distance_max": 8, "cost": 40},
+    {"post_type": "Regular", "weight_min": 1001, "weight_max": 5000, "distance_min": 9, "distance_max": 200, "cost": 66},
+    {"post_type": "Regular", "weight_min": 1001, "weight_max": 5000, "distance_min": 201, "distance_max": 1000, "cost": 80},
+    {"post_type": "Regular", "weight_min": 1001, "weight_max": 5000, "distance_min": 1001, "distance_max": 2000, "cost": 102},
+    {"post_type": "Regular", "weight_min": 1001, "weight_max": 5000, "distance_min": 2001, "distance_max": 5000, "cost": 112},
+]
+
+
+def calculate_costi(weight, distance, post_name, is_document=False):
+    try:
+        if is_document:
+
+            cost_entry = PostCost.objects.get(
+                post_type__iexact=post_name,
+                is_document=True,
+                distance_min__lte=distance,
+                distance_max__gte=distance
+            )
+        else:
+
+            cost_entry = PostCost.objects.get(
+                post_type__iexact=post_name,
+                is_document=False,
+                weight_min__lte=weight,
+                weight_max__gte=weight,
+                distance_min__lte=distance,
+                distance_max__gte=distance
+            )
+        return cost_entry.cost
+    except PostCost.DoesNotExist:
+        return "Cost not found for the given parameters."
