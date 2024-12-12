@@ -1536,3 +1536,37 @@ def send_message_reason(phone_number,message):
     except Exception as e:
         # Log the error for debugging
         return False
+    
+    
+#class get todays,weekly,monthly checkin and checkout count
+
+class get_checkin_checkout_count(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self,request):
+        try:
+            employee, employee_type, Employee_id = token_process_employee(request)
+        except ValueError as e:
+            return Response({"error": str(e),"message":"invalid_token"}, status=status.HTTP_400_BAD_REQUEST)    
+        try:
+            today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            six_days_ago = today - timedelta(days=6)
+            thirty_days_ago = today - timedelta(days=30)
+            
+            checkin_count = consignment_journey.objects.filter(created_at=employee.type,created_place_id=employee.office_id,date_time__gte=today,process="check_in").count()
+            checkout_count = consignment_journey.objects.filter(created_at=employee.type,created_place_id=employee.office_id,date_time__gte=today,process="check_out").count()
+            
+            weekly_checkin_count = consignment_journey.objects.filter(created_at=employee.type,created_place_id=employee.office_id,date_time__gte=six_days_ago,process="check_in").count()
+            weekly_checkout_count = consignment_journey.objects.filter(created_at=employee.type,created_place_id=employee.office_id,date_time__gte=six_days_ago,process="check_out").count()
+            
+            monthly_checkin_count = consignment_journey.objects.filter(created_at=employee.type,created_place_id=employee.office_id,date_time__gte=thirty_days_ago,process="check_in").count()
+            monthly_checkout_count = consignment_journey.objects.filter(created_at=employee.type,created_place_id=employee.office_id,date_time__gte=thirty_days_ago,process="check_out").count()
+            
+            return Response({"checkin_count": checkin_count,
+                            "checkout_count": checkout_count,
+                            "weekly_checkin_count": weekly_checkin_count,
+                            "weekly_checkout_count": weekly_checkout_count,
+                            "monthly_checkin_count": monthly_checkin_count,
+                            "monthly_checkout_count": monthly_checkout_count}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

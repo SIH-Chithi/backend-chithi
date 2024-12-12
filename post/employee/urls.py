@@ -52,6 +52,8 @@ urlpatterns = [
     path('create_system_complain/', create_system_complain.as_view(), name='create_system_complain'),
     path('get_system_complain_details/', get_details_system_complain.as_view(), name='get_system_complain_details'),
     path('give_message/', give_message.as_view(), name='give_message'),
+    
+    path('get_checkin_checkout_count/', get_checkin_checkout_count.as_view(), name='get_checkin_checkout_count'),
 ]
 
 
