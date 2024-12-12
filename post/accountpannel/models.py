@@ -447,4 +447,14 @@ class system_complain(models.Model):
     
     
 
+class PostCost(models.Model):
+    post_type = models.CharField(max_length=50,blank=True,null=True)  # e.g., 'SpeedPost', 'Regular'
+    weight_min = models.FloatField(blank=True,null=True)  # Minimum weight range
+    weight_max = models.FloatField(blank=True,null=True)  # Maximum weight range
+    distance_min = models.FloatField(blank=True,null=True)  # Minimum distance range
+    distance_max = models.FloatField(blank=True,null=True)  # Maximum distance range
+    cost = models.DecimalField(max_digits=10, decimal_places=2,blank=True,null=True)
+    is_document=models.BooleanField(default=False)
 
+    def __str__(self):
+        return f"{self.post_type}: {self.weight_min}-{self.weight_max}kg, {self.distance_min}-{self.distance_max}km -> ₹{self.cost}"
