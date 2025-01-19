@@ -917,7 +917,6 @@ def add_system_comaplins():
                 senders_details_obj=senders_details.objects.get(consignment_id=obj)
                 phone_number=senders_details_obj.phone_number
                 send_message_delay(phone_number,extra_time)
-                
                 type=last_check_in.created_at
                 id=last_check_in.created_place_id
                 #system_complain.objects.create(consignment_id=obj,type=type,office_id=id,delayed_time=extra_time)
@@ -935,12 +934,13 @@ def send_message_delay(phone_number,delay_time):
         payload = {
             'from': "Vonage APIs",
             'to': int("91" + str(phone_number)),
-            'text': f"Your consignment is delayed by {delay_time}. We regret the inconvenience caused.",
+            'text': delay_time,
             'api_key': settings.VONAGE_API_KEY,
             'api_secret': settings.VONAGE_API_SECRET
         }
         url = "https://rest.nexmo.com/sms/json"
         response = sendsms(payload, url)
+    
         return True
     except Exception as e:
         # Log the error for debugging
