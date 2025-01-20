@@ -1078,7 +1078,3 @@ dummy_data = [
     }
 
 ]
-
-class getdata_formap(APIView):
-    def get(self,request):
-        return Response(dummy_data, status=status.HTTP_200_OK)
