@@ -187,7 +187,7 @@ def update_next(consignment,employee):
     try:
         consignment_route_obj=consignment_route.objects.get(consignment_id=consignment)
         route=consignment_route_obj.get_route()
-       
+
         point=consignment_route_obj.pointer
         if not route:
             raise Exception("Route is empty")
@@ -270,4 +270,7 @@ def add_office_name(route):
         return updated_route
     except Exception as e:
         raise Exception(str(e))
+    
+#all things done
+
     
